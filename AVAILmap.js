@@ -28,7 +28,12 @@
     }
 
 	function drawTile(self, d, tilePath, layer) {
-		var url = layer.getURL() + "/" + d[2] + "/" + d[0] + "/" + d[1] + ".topojson";
+		var url = layer.getURL()
+		if (url.indexOf('http://tile.openstreetmap') === 0) {
+			url = url.replace('http://', 'http://' + ["a", "b", "c"][(d[0] * 31 + d[1]) % 3] + '.')
+		}
+		url += "/" + d[2] + "/" + d[0] + "/" + d[1] + ".topojson";
+		//console.log(url);
 
 	  	var svg = d3.select(self);
 
