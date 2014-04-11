@@ -1,0 +1,32 @@
+body {
+  margin: 0;
+}
+
+.map {
+  position: relative;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  stroke: #000;
+}
+
+.path {
+  fill: none;
+  stroke: #000;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.info {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+}
