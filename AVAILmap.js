@@ -1,6 +1,6 @@
 (function() {
     var avl = {
-        version: "1.0.0-alpha"
+        version: "1.0.1-alpha"
     };
 
     // tile layer constructor function
@@ -97,7 +97,14 @@
 		    svg.selectAll("path")
 		        .data(json.features)
 		      .enter().append("path")
-		      	.attr('class', 'path')
+		      	.attr('class', function() {
+		    		var cls = 'path',
+		    			props = layer.getProperties();
+		    		for (key in props) {
+		    			cls += ' ' + props[key];
+		    		}
+		    		return cls;
+		    	})
 		        .attr("d", tilePath);
 	  	});
 	}
@@ -173,14 +180,7 @@
 		    	.remove();
 
 		  	image.enter().append('svg')
-		    	.attr("class", function() {
-		    		var cls = 'tile',
-		    			props = layer.getProperties();
-		    		for (key in props) {
-		    			cls += ' ' + props[key];
-		    		}
-		    		return cls;
-		    	})
+		    	.attr("class", 'tile')
 		    	.style("left", function(d) { return d[0] * 256 + "px"; })
 		    	.style("top", function(d) { return d[1] * 256 + "px"; })
 		    	.each(function(d) {
