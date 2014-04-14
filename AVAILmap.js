@@ -9,14 +9,17 @@
     		layer = null,
     		baseURL = url,
     		drawFunc,
-    		properties;
+    		properties,
+    		styles;
 
     	if (typeof options !== 'undefined') {
     		drawFunc = options.func || drawTile;
-    		properties = properties || {};
+    		properties = options.properties || [];
+    		styles = options.styles || [];
     	} else {
     		drawFunc = drawTile;
-    		properties = {};
+    		styles = [];
+    		properties = [];
     	}
 
     	self.getURL = function() {
@@ -43,35 +46,57 @@
     		layer = l;
     	}
 
+    	self.getStyles = function() {
+    		return styles;
+    	}
+
+    	self.addStyle = function(cls) {
+    		if (!(cls instanceof Array)) {
+    			return;
+    		}
+			var index = styles.indexOf(cls);
+			if (index === -1) {
+				styles.push(cls);
+			}
+    	}
+
     	self.getProperties = function() {
     		return properties;
     	}
 
     	self.addProperty = function(prop) {
-    		if (typeof prop !== 'object') {
-
+    		if (!(prop instanceof Array)) {
+    			return;
     		}
-    		for (key in prop) {
-    			properties[key] = prop[key];
-    		}
+    		prop.forEach(function(p) {
+				var index = properties.indexOf(p);
+				if (index === -1) {
+					properties.push(p);
+				}
+			});
     	}
 
-    	function _removeProperty(key) {
-			if (typeof properties[key] !== 'undefined') {
-				delete properties[key];
-    		} else {
-				throw new ObjectException("Property '" + key + "' does not exist");
+    	function _removeProperty(prop) {
+			if (typeof prop !== 'string') {
+				return;
+			}
+			var index = properties.indexOf(prop);
+			if (index > -1) {
+				properties.splice(index);
+			} else {
+				throw new ObjectException("Property '" + prop + "' does not exist");
 			}
     	}
 
     	self.removeProperty = function(prop) {
-    		for (key in prop) {
+    		if (!(prop instanceof Array)) {
+    			return;
+    		}
+    		prop.forEach(function(p) {
 	    		try {
-	    			_removeProperty(key);
-	    		} catch(e) {
-	    			continue
-	    		}
-	    	}
+	    			_removeProperty(p);
+	    		} catch(e) {}
+	    	});
     	}
     }
 
@@ -96,13 +121,15 @@
 
 		    svg.selectAll("path")
 		        .data(json.features)
-		      .enter().append("path")
-		      	.attr('class', function() {
-		    		var cls = 'path',
-		    			props = layer.getProperties();
-		    		for (key in props) {
-		    			cls += ' ' + props[key];
-		    		}
+		      	.enter().append("path")
+		      	.attr('class', function(d) {
+		    		var cls = 'path';
+		    		layer.getProperties().forEach(function(prop) {
+		    			cls += ' ' + prop + '-' + d.properties[prop];
+		    		});
+		    		layer.getStyles().forEach(function(style) {
+		    			cls += ' ' + style;
+		    		});
 		    		return cls;
 		    	})
 		        .attr("d", tilePath);
