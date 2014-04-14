@@ -1,21 +1,38 @@
 (function() {
     var avl = {
-        version: "0.1.0-alpha"
+        version: "1.0.0-alpha"
     };
 
     // tile layer constructor function
-    function _TileLayer(url, func) {
+    function _TileLayer(url, options) {//func, properties) {
     	var self = this,
+    		layer = null,
     		baseURL = url,
-    		drawFunc = func || drawTile,
-    		layer;
+    		drawFunc,
+    		properties;
+
+    	if (typeof options !== 'undefined') {
+    		drawFunc = options.func || drawTile;
+    		properties = properties || {};
+    	} else {
+    		drawFunc = drawTile;
+    		properties = {};
+    	}
 
     	self.getURL = function() {
     		return url;
     	}
 
+    	self.setURL = function(url) {
+    		baseURL = url;
+    	}
+
     	self.getDrawFunc = function() {
     		return drawFunc;
+    	}
+
+    	self.setDrawFunc = function(func) {
+    		drawFunc = func;
     	}
 
     	self.getLayer = function() {
@@ -24,6 +41,37 @@
 
     	self.setLayer = function(l) {
     		layer = l;
+    	}
+
+    	self.getProperties = function() {
+    		return properties;
+    	}
+
+    	self.addProperty = function(prop) {
+    		if (typeof prop !== 'object') {
+
+    		}
+    		for (key in prop) {
+    			properties[key] = prop[key];
+    		}
+    	}
+
+    	function _removeProperty(key) {
+			if (typeof properties[key] !== 'undefined') {
+				delete properties[key];
+    		} else {
+				throw new ObjectException("Property '" + key + "' does not exist");
+			}
+    	}
+
+    	self.removeProperty = function(prop) {
+    		for (key in prop) {
+	    		try {
+	    			_removeProperty(key);
+	    		} catch(e) {
+	    			continue
+	    		}
+	    	}
     	}
     }
 
@@ -55,13 +103,19 @@
 	}
 
     // map constructor function
-    function _Map(id, startLoc, startScale, scaleRange) {
+    function _Map(id, options) {//startLoc, startScale, scaleRange) {
     	var self = this;
 
     	self.IDtag = id;
-    	self.startLoc = startLoc || [-73.8064, 42.6942]; // defaults to Albany, NY
-    	self.startScale = startScale || 1 << 15;
-    	self.scaleRange = scaleRange || [1 << 15, 1 << 25];
+    	if (typeof options !== 'undefined') {
+	    	self.startLoc = options.startLoc || [-73.8064, 42.6942]; // defaults to Albany, NY
+	    	self.startScale = options.startScale || 1 << 15;
+	    	self.scaleRange = options.scaleRange || [1 << 15, 1 << 25];
+    	} else {
+	    	self.startLoc = [-73.8064, 42.6942]; // defaults to Albany, NY
+	    	self.startScale = 1 << 15;
+	    	self.scaleRange = [1 << 15, 1 << 25];
+    	}
 
     	var width = parseInt(d3.select(self.IDtag).style('width')),
     		height = parseInt(d3.select(self.IDtag).style('height')),
@@ -119,7 +173,14 @@
 		    	.remove();
 
 		  	image.enter().append('svg')
-		    	.attr("class", "tile")
+		    	.attr("class", function() {
+		    		var cls = 'tile',
+		    			props = layer.getProperties();
+		    		for (key in props) {
+		    			cls += ' ' + props[key];
+		    		}
+		    		return cls;
+		    	})
 		    	.style("left", function(d) { return d[0] * 256 + "px"; })
 		    	.style("top", function(d) { return d[1] * 256 + "px"; })
 		    	.each(function(d) {
@@ -146,6 +207,13 @@
 				throw new ObjectException("No Layer Object argument");
 			}
 		}
+
+		self.removeLayer = function(layer) {
+			var index = layers.indexOf(layers);
+			if (index !== -1) {
+				layers.splice(index, 1);
+			}
+		}
     }
 
 	function matrix3d(scale, translate) {
@@ -162,15 +230,15 @@
 	  	return "";
 	}
 
-	avl.TileLayer = function(url, func) {
+	avl.TileLayer = function(url, options) {//func, classes) {
 		if (typeof url !== 'undefined') {
-			return new _TileLayer(url, func);
+			return new _TileLayer(url, options);//func, classes);
 		} else {
 			throw new ObjectException("You must specify a map URL");
 		}
 	}
 
-	avl.Map = function(id, startLoc, startScale, scaleRange) {
+	avl.Map = function(id, options) {//startLoc, startScale, scaleRange) {
 		if (typeof id !== 'undefined') {
 			if (document.getElementById(id) === null) {
 		    	var width = Math.max(960, window.innerWidth),
@@ -181,19 +249,17 @@
 				    .style("width", width + "px")
 				    .style("height", height + "px");
 			}
-			return new _Map(id, startLoc, startScale, scaleRange);
+			return new _Map(id, options);//startLoc, startScale, scaleRange);
 		} else {
 			throw new ObjectException("You must specify a map ID");
 		}
 	}
 
 	// exception constructor
-	function ObjectException(msg) {
-		this.message = msg;
-		this.name = 'ObjectException';
-		this.print = function() {
-			console.log(msg);
-		}
+	function ObjectException(m) {
+		this.type = 'ObjectException';
+		this.msg = m;
+		console.error(m);
 	}
 
     this.avl = avl;
