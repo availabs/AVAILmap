@@ -31,8 +31,13 @@ body {
   left: 10px;
 }
 
+.building {
+  stroke: #f00;  
+}
+
 .water {
-  fill: #00f;
+  stroke: #00f;
+  fill: #aaf;
 }
 
 .type-1 {

@@ -185,7 +185,7 @@
 		function zoomLayers() {
 			layers.forEach(function(layer) {
 				zoomed(layer);
-			})
+			});
 		}
 
 		function zoomed(layer) {
@@ -198,7 +198,7 @@
 		      	.translate(zoom.translate());
 
 		  	var image = layer.getLayer()
-		      	.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
+		  		.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
 		    	.selectAll(".tile")
 		      	.data(tiles, function(d) { return d; });
 
@@ -212,7 +212,7 @@
 		    	.style("top", function(d) { return d[1] * 256 + "px"; })
 		    	.each(function(d) {
 		      		layer.getDrawFunc()(this, d, tilePath, layer);
-		    	})
+		    	});
 		}
 
 		function mousemoved() {
@@ -236,7 +236,7 @@
 		}
 
 		self.removeLayer = function(layer) {
-			var index = layers.indexOf(layers);
+			var index = layers.indexOf(layer);
 			if (index !== -1) {
 				layers.splice(index, 1);
 			}
