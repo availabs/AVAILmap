@@ -8,7 +8,7 @@ body {
   display: block;
 }
 
-.layer {
+.layersDiv {
   position: absolute;
 }
 
@@ -27,13 +27,20 @@ body {
 }
 
 .info {
+  background: #fff;
+  padding: 5px;
   position: absolute;
   bottom: 10px;
   left: 10px;
 }
 
 .building {
-  stroke: #f00;
+  stroke: #f44;
+  fill: #fcc;
+}
+
+.building-hover {
+  fill: #f99;
 }
 
 .water {
@@ -41,45 +48,44 @@ body {
 }
 
 .county {
-  stroke:#0f0;
+  stroke: #0f0;
+  stroke-width: 5px;
+  opacity: .5;
+}
+
+.county-hover {
   fill: #9f9;
 }
 
-.county:hover {
-  fill: #00f;
+.road {
+  stroke: #585;
 }
 
+/* HPMS roads */
 .type-1 {
   stroke-width: 5px;
-  /*stroke: rgb(240, 100, 25);*/
 }
 
 .type-2 {
   stroke-width: 4px;
-  /*stroke: rgb(205, 135, 25);*/
 }
 
 .type-3 {
   stroke-width: 3px;
-  /*stroke: rgb(170, 170, 25);*/
 }
 
 .type-4 {
   stroke-width: 2px;
-  /*stroke: rgb(115, 205, 25);*/
 }
 
 .type-5 {
   stroke-width: 1px;
-  /*stroke: rgb(100, 240, 25);*/
 }
 
 .type-6 {
   stroke-width: 1px;
-  /*stroke: rgb(100, 200, 25);*/
 }
 
 .type-7 {
   stroke-width: 1px;
-  /*stroke: rgb(100, 200, 25);*/
 }
