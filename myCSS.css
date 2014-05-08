@@ -6,6 +6,7 @@ body {
   position: relative;
   overflow: hidden;
   display: block;
+  background-color: #E3D39B;
 }
 
 .layersDiv {
@@ -26,25 +27,78 @@ body {
   stroke-linecap: round;
 }
 
-.info {
-  background: #fff;
+/* css for controls */
+.control {
+  background-color: rgba(96, 78, 108, 0.5);
+  /*background: none;*/
   padding: 5px;
-  position: absolute;
+  position: fixed;
+  text-align: center;
+  color: #614e6c;
+}
+/* buttons */
+.button {
+  height: 21px;
+  width: 21px;
+  margin: 2px;
+  padding: 2px;
+  line-height: 23px;
+  font-family: "sans serif";
+}
+.button:hover {
+  border: solid 2px #614e6c;
+  padding: 0px;
+}
+#info-text {
+  height: 21px;
+  margin: 2px;
+  padding: 2px 10px;
+  line-height: 23px;
+  font-family: "sans serif";
+  background-color: #cbaf42;
+}
+.bold {
+  font-weight: 900;
+  font-size: 25px;
+  line-height: 20px;
+}
+.active {
+  background-color: #cbaf42;
+}
+.inactive {
+  background-color: #ab8f22;
+}
+/* locations */
+.top-left {
+  top: 10px;
+  left: 10px;
+}
+.top-right {
+  top: 10px;
+  right: 10px;
+}
+.bottom-left {
   bottom: 10px;
   left: 10px;
 }
+.bottom-right {
+  bottom: 10px;
+  right: 10px;
+}
+/* end controls css */
 
 .building {
-  stroke: #f44;
-  fill: #fcc;
-}
-
-.building-hover {
-  fill: #f99;
+  stroke: #555;
+  fill: #555;
 }
 
 .water {
-  stroke: #00f;
+  stroke: #5d9a91;
+  fill: #5d9a91;
+}
+
+.road {
+  stroke: #433364;
 }
 
 .county {
@@ -55,37 +109,4 @@ body {
 
 .county-hover {
   fill: #9f9;
-}
-
-.road {
-  stroke: #585;
-}
-
-/* HPMS roads */
-.type-1 {
-  stroke-width: 5px;
-}
-
-.type-2 {
-  stroke-width: 4px;
-}
-
-.type-3 {
-  stroke-width: 3px;
-}
-
-.type-4 {
-  stroke-width: 2px;
-}
-
-.type-5 {
-  stroke-width: 1px;
-}
-
-.type-6 {
-  stroke-width: 1px;
-}
-
-.type-7 {
-  stroke-width: 1px;
 }

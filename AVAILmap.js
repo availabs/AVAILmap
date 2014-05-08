@@ -120,10 +120,6 @@
     		map = m;
     	}
 
-    	self.getHover =function() {
-    		return hover;
-    	}
-
     	self.getZIndex = function() {
     		return zIndex;
     	}
@@ -148,6 +144,14 @@
     		if (len !== lst.length) {
     			map.drawLayer(self);
     		}
+    	}
+
+    	self.getHover =function() {
+    		return hover;
+    	}
+    	self.setHover = function(h) {
+    		hover = h;
+    		map.drawLayer(self);
     	}
 
     	self.getChoros = function() {
@@ -297,8 +301,28 @@
 	    }
     }
 
+    function _Controls(mapObj, projection, zoom, options) {
+
+		var map = d3.select(mapObj.IDtag);
+
+		map.on("mousemove", mouseMoved);
+		var info = map.append("div")
+		    .attr("class", "info");
+
+		function mouseMoved() {
+		  	info.text(formatLocation(projection.invert(d3.mouse(this)), zoom.scale()));
+		}
+
+		function formatLocation(p, k) {
+		  	var format = d3.format("." + Math.floor(Math.log(k) / 2 - 2) + "f");
+		  	return (p[1] < 0 ? format(-p[1]) + "°S" : format(p[1]) + "°N") + " "
+		       	+ (p[0] < 0 ? format(-p[0]) + "°W" : format(p[0]) + "°E");
+		}
+
+    }
+
     // map constructor function
-    function _Map(id, options) {
+    function _Map(id, options, cntrls) {
     	var self = this,
 	    	layers = [],
     		layerIDs = 0;
@@ -312,7 +336,7 @@
     	} else {
 	    	self.startLoc = [-73.8064, 42.6942]; // defaults to Albany, NY
 	    	self.startScale = 1 << 15;
-	    	self.scaleRange = [1 << 11, 1 << 25];
+	    	self.scaleRange = [1 << 15, 1 << 25];
     	}
 
     	var width = parseInt(d3.select(self.IDtag).style('width')),
@@ -339,20 +363,20 @@
 		    .attr("class", "map")
 		    .style("width", width + "px")
 		    .style("height", height + "px")
-		    .call(zoom)
-		    .on("mousemove", mouseMoved);
+		    .call(zoom);
 
 		var layersDiv = map.append("div")
 			.attr('id', 'z-index-0')
 		    .attr("class", "layersDiv");
 
-		var info = map.append("div")
-		    .attr("class", "info");
+    	self.controls = new _Controls(self, projection, zoom, cntrls);
 
 		function zoomMap() {
 			var tiles = mapTile
 			    .scale(zoom.scale())
 			    .translate(zoom.translate())();
+
+			console.log(tiles[0]);
 
 		  	projection
 		      	.scale(zoom.scale() / 2 / Math.PI)
@@ -399,16 +423,6 @@
 
 		self.drawLayer = function(layerObj) {
 			_drawLayer(layerObj);
-		}
-
-		function mouseMoved() {
-		  	info.text(formatLocation(projection.invert(d3.mouse(this)), zoom.scale()));
-		}
-
-		function formatLocation(p, k) {
-		  	var format = d3.format("." + Math.floor(Math.log(k) / 2 - 2) + "f");
-		  	return (p[1] < 0 ? format(-p[1]) + "°S" : format(p[1]) + "°N") + " "
-		       	+ (p[0] < 0 ? format(-p[0]) + "°W" : format(p[0]) + "°E");
 		}
 
 		self.addLayer = function(layer) {
