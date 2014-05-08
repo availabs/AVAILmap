@@ -460,11 +460,14 @@
             .on('mouseover', function() {
                 d3.select(this).selectAll('div')
                     .each(function(d, i) {
-                        d3.select(this)
-                            .text(d.getName())
+                        var DOMel = d3.select(this);
+                        DOMel.text(d.getName())
                             .style('padding', function() {
-                                var border = parseInt(d3.select(this).style('border'));
-                                return (2 - border) + 'px ' + (10 - border) + 'px';
+                                var border = parseInt(DOMel.style('border')),
+                                    padding = parseInt(DOMel.style('padding')),
+                                    width = Math.floor(parseInt(DOMel.style('width')) / 2);
+
+                                return Math.max(0, padding - border) + 'px ' + (width - border) + 'px';
                             })
                             .style('width', 'auto');
                     })
@@ -489,10 +492,14 @@
         }
         function _updateLayers() {
             layers = mapObj.getLayers();
-            layerDisplayer
+            
+            var buttons = layerDisplayer
                 .selectAll('div')
-                .data(layers)
-                .enter().append('div')
+                .data(layers);
+
+            buttons.exit().remove();
+
+            buttons.enter().append('div')
                 .attr('class', 'button active')
                 .text(function(d, i) { return i; })
                 .on('click', function(d) {

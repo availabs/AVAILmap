@@ -45,6 +45,12 @@ body {
   line-height: 23px;
   font-family: "sans serif";
 }
+.active {
+  background-color: #cbaf42;
+}
+.inactive {
+  background-color: #ab8f22;
+}
 .button:hover {
   border: solid 2px #614e6c;
   padding: 0px;
@@ -61,12 +67,6 @@ body {
   font-weight: 900;
   font-size: 25px;
   line-height: 20px;
-}
-.active {
-  background-color: #cbaf42;
-}
-.inactive {
-  background-color: #ab8f22;
 }
 /* locations */
 .top-left {
