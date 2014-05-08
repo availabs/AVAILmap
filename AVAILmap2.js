@@ -361,7 +361,9 @@
 
         var info = map.append("div")
             .attr('id', 'info-control')
-            .attr("class", "control");
+            .attr("class", "control")
+            .append('div')
+            .attr('id', 'info-text');
 
         self.init(self);
         self.setPosition(position);

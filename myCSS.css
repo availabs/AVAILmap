@@ -6,7 +6,7 @@ body {
   position: relative;
   overflow: hidden;
   display: block;
-  background-color: rgb(230, 200, 170);
+  background-color: #E3D39B;
 }
 
 .layersDiv {
@@ -29,11 +29,12 @@ body {
 
 /* css for controls */
 .control {
-  background-color: rgba(224, 0, 0, 0.25);
+  background-color: rgba(96, 78, 108, 0.5);
   /*background: none;*/
   padding: 5px;
   position: fixed;
   text-align: center;
+  color: #614e6c;
 }
 /* buttons */
 .button {
@@ -45,8 +46,16 @@ body {
   font-family: "sans serif";
 }
 .button:hover {
-  border: solid 2px #000;
+  border: solid 2px #614e6c;
   padding: 0px;
+}
+#info-text {
+  height: 21px;
+  margin: 2px;
+  padding: 2px 10px;
+  line-height: 23px;
+  font-family: "sans serif";
+  background-color: #cbaf42;
 }
 .bold {
   font-weight: 900;
@@ -54,10 +63,10 @@ body {
   line-height: 20px;
 }
 .active {
-  background-color: #e00;
+  background-color: #cbaf42;
 }
 .inactive {
-  background-color: #a00;
+  background-color: #ab8f22;
 }
 /* locations */
 .top-left {
@@ -84,12 +93,12 @@ body {
 }
 
 .water {
-  stroke: #aaf;
-  fill: #aaf;
+  stroke: #5d9a91;
+  fill: #5d9a91;
 }
 
 .road {
-  stroke: #141;
+  stroke: #433364;
 }
 
 .county {
