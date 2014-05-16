@@ -45,15 +45,15 @@ body {
   line-height: 23px;
   font-family: "sans serif";
 }
+.button:hover {
+  border: solid 2px #614e6c;
+  padding: 0px;
+}
 .active {
   background-color: #cbaf42;
 }
 .inactive {
   background-color: #ab8f22;
-}
-.button:hover {
-  border: solid 2px #614e6c;
-  padding: 0px;
 }
 #info-text {
   height: 21px;
@@ -87,26 +87,41 @@ body {
 }
 /* end controls css */
 
+/* marker */
+.marker {
+  height: 30px;
+  width: 30px;
+  background-color: #f00;
+  position: absolute;
+}
+
 .building {
-  stroke: #555;
-  fill: #555;
+  stroke: #070;
+  fill: #070;
 }
 
 .water {
   stroke: #5d9a91;
   fill: #5d9a91;
 }
+.water-hover {
+  stroke: #7dbab1;
+  fill: #7dbab1;
+}
 
 .road {
-  stroke: #433364;
+  stroke: #777;
 }
 
-.county {
-  stroke: #0f0;
-  stroke-width: 5px;
-  opacity: .5;
+.kind-highway {
+  stroke-width: 3px;
+  stroke: #a00;
 }
-
-.county-hover {
-  fill: #9f9;
+.kind-major_road {
+  stroke-width: 2px;
+  stroke: #ff6500;
+}
+.kind-minor_road {
+  stroke-width: 1px;
+  stroke: #cc9500;
 }
