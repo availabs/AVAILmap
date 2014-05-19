@@ -1,13 +1,15 @@
-rng = ['#edf8fb', '#ccece6', '#99d8c9', '#66c2a4', '#41ae76', '#238b45', '#005824']
+dmn = [5000, 200000];
+rng = ["#a50026","#d73027","#f46d43","#fdae61","#fee08b","#d9ef8b","#a6d96a","#66bd63","#1a9850","#006837"];
+rng = rng.reverse();
 
 window.onload = function(){
-	avl.Map('#map')
+	var map = avl.Map('#map')
 		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-buildings",
-			{styles:['building'], name:'buildings'}))
+			{styles:['building'], name:'buildings', dataType: 'topojson'}))
 		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-highroad",
-			{styles:['road'], properties:['kind'], name:'roads'}))
+			{styles:['road'], properties:['kind'], name:'roads', dataType: 'topojson'}))
 		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-water-areas",
-			{styles:['water'], hover:['name', 'water-hover']}))
+			{styles:['water'], hover:[['water-hover', 'name']], dataType: 'topojson'}))
 		// .addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-skeletron",
 		// 	{styles:['road-names']}))
 		.addControl('info', 'bottom-left')
@@ -19,6 +21,6 @@ window.onload = function(){
 	// map.addLayer(avl.TileLayer("http://localhost:8000/counties",
 	// 					{styles:['county'], hover: 'county-hover', zIndex: -1}));
 	// map.addLayer(avl.TileLayer("http://localhost:8000/roads",
-	// 					{properties:['type'],
-	// 					 choro: {attr: 'aadt', range: rng, style: 'stroke'}}));
+	// 					{properties:['type'], dataType: 'topojson', name: 'HPMS', 
+	// 					 choros: [{attr: 'aadt', domain: dmn, range: rng, style: 'stroke'}]}));
 }
