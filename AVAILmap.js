@@ -254,13 +254,14 @@
                 var xhr = new _Request(id),
                     URL = _makeURL(d, baseURL);
                 requests.push(xhr);
+console.log('sending request');
                 xhr.setXHR(d3.json(URL, function(error, data) {
                     _removeXHR(xhr);
                     if (error) {
                         return false;
                     }
                     var json = dataDecoder(data);
-
+console.log('request returns', json);
                     cache.putJSON(json, id);
                     drawFunc(SVG, d, tilePath, self, json);
                 }));
@@ -316,6 +317,7 @@
     function _generateTileID(d) {
         return 'tile-' + d.join('-');
     }
+	var regex = /\d{4}\./;
 
     function _drawTile(SVG, d, tilePath, layer, json) {
         var k = (1 << d[2]) * 256;
@@ -345,14 +347,36 @@
                 });
                 return cls;
             })
-            .attr("d", tilePath)
-            .style('visibility', visibility);
+            .attr("d", function(d) {
+				var path = tilePath(d);
+				if (!regex.test(path))
+					return path;
+
+            	var segments = path.split('M');
+            	for (var i in segments) {
+            		if (Math.abs(parseInt(segments[i])) > 256) {
+            			segments.splice(i, 1);
+            		}
+            	}
+				return segments.join('M');
+			})
+            .style('visibility', visibility)/*
+            .on('click', function(d) {
+            	console.log(d);
+            	var path = d3.select(this).attr('d');
+            	console.log(path);
+            	var segments = path.split('M');
+            	for (var i in segments) {
+            		console.log(segments[i]);
+            	}
+            	console.log(segments.join('M')==path);
+            })*/;
 
         var choros = layer.getChoros();
 
         if (choros !== false) {
 			paths.each(function(d) {
-                path = d3.select(this);
+                var path = d3.select(this);
                 choros.forEach(function(chr) {
                 	path.style(chr.style, chr.scale(d.properties[chr.attr]))
                 });
@@ -407,10 +431,6 @@
             }
             position = p;
             DOMel.classed(position, true);
-        }
-
-        self.update = function(arg) {
-            return;
         }
     }
 
@@ -509,7 +529,7 @@
 
     function _LayerControl(mapObj, map, projection, zoom, position) {
         var self = this,
-            layers = [];
+            layers = mapObj.getLayers();
 
         var layerDisplayer = map.append('div')
             .attr('id', 'layer-control')
@@ -520,12 +540,12 @@
             .on('mouseover', function() {
                 d3.select(this).selectAll('div')
                     .each(function(d, i) {
-                        var DOMel = d3.select(this);
-                        DOMel.text(d.getName())
+                        var el = d3.select(this);
+                        el.text(d.getName())
                             .style('padding', function() {
-                                var border = parseInt(DOMel.style('border')),
-                                    padding = parseInt(DOMel.style('padding')),
-                                    width = Math.floor(parseInt(DOMel.style('width')) / 2);
+                                var border = parseInt(el.style('border')),
+                                    padding = parseInt(el.style('padding')),
+                                    width = Math.floor(parseInt(el.style('width')) / 2);
 
                                 return Math.max(0, padding - border) + 'px ' + (width - border) + 'px';
                             })
@@ -547,12 +567,14 @@
 
         _updateLayers();
 
-        self.update = function(arg) {
+        self.add = function(layer) {
+        	if (layers.indexOf(layer) === -1) {
+        		layers.push(layer);
+        	}
             _updateLayers();
         }
+
         function _updateLayers() {
-            layers = mapObj.getLayers();
-            
             var buttons = layerDisplayer
                 .selectAll('div')
                 .data(layers);
@@ -568,28 +590,94 @@
                     d3.select(this)
                         .classed('active', active)
                         .classed('inactive', !active);
-                })/*
-                .on('mouseover', function(d) {
-                    d3.select(this)
-                        .text(d.getName())
-                        .style('padding', '0 10px 0 10px')
-                        .style('width', 'auto');
-                })
-                .on('mouseout', function(d, i) {
-                    d3.select(this)
-                        .text(i)
-                        .style('padding', null)
-                        .style('width', null);
-                })*/;
+                });
         }
     }
     _LayerControl.prototype = new _Control('#layer-control');
     _LayerControl.prototype.constructor = _LayerControl;
 
+    function _MarkerControl(mapObj, map, projection, zoom, position) {
+    	var self = this,
+            width = parseInt(d3.select(mapObj.getID()).style('width')),
+            height = parseInt(d3.select(mapObj.getID()).style('height'));
+    		markers = mapObj.getMarkers();
+
+        var markerController = map.append('div')
+            .attr('id', 'marker-control')
+            .attr('class', 'control')
+            .on('dblclick', function() {
+                d3.event.stopPropagation();
+            })
+            .on('mouseover', function() {
+                d3.select(this).selectAll('div')
+                    .each(function(d, i) {
+                        var el = d3.select(this);
+                        el.text(d.getName())
+                            .style('padding', function() {
+                                var border = parseInt(el.style('border')),
+                                    padding = parseInt(el.style('padding')),
+                                    width = Math.floor(parseInt(el.style('width')) / 2);
+
+                                return Math.max(0, padding - border) + 'px ' + (width - border) + 'px';
+                            })
+                            .style('width', 'auto');
+                    })
+            })
+            .on('mouseout', function() {
+                d3.select(this).selectAll('div')
+                    .each(function(d, i) {
+                        d3.select(this)
+                            .text(i)
+                            .style('padding', null)
+                            .style('width', null);
+                    })
+            });;
+
+        self.init(self);
+        self.setPosition(position);
+
+        _updateMarkers()
+
+        self.add = function(marker) {
+        	if (markers.indexOf(marker) === -1) {
+        		markers.push(marker);
+        	}
+            _updateMarkers();
+        }
+
+        function _updateMarkers() {
+            var buttons = markerController
+                .selectAll('div')
+                .data(markers);
+
+            buttons.exit().remove();
+
+            buttons.enter().append('div')
+                .attr('class', 'button active')
+                .text(function(d, i) { return i; })
+                .on('click', function(d) {
+            		projection
+					    //.scale(1 << 19)
+					    .center(d.getCoords()) // temporarily set center
+					    .translate([width / 2, height / 2])
+					    .translate(projection([0, 0])) // compute appropriate translate
+					    .center([0, 0]); // reset
+
+					zoom
+					    //.scale(projection.scale())
+					    .translate(projection.translate());
+
+            		mapObj.zoomMap();
+                });
+        }
+    }
+    _MarkerControl.prototype = new _Control('#marker-control');
+    _MarkerControl.prototype.constructor = _MarkerControl;
+
     // main controls container constructor function
     function _Controls(mapObj, projection, zoom) {
         var self = this,
-            controls = {},
+        	controls = {},
             map = d3.select(mapObj.getID()),
             allPositions = ['top-right', 'bottom-right', 'bottom-left', 'top-left'],
             positionsUsed = [];
@@ -610,13 +698,22 @@
             else if (type === 'layer' && !controls.layer) {
                 controls.layer = new _LayerControl(mapObj, map, projection, zoom, position);
             }
+            else if (type === 'marker' && !controls.marker) {
+                controls.marker = new _MarkerControl(mapObj, map, projection, zoom, position);
+            }
             positionsUsed.push(position);
         }
 
-        self.update = function(arg) {
-            for (control in controls) {
-                controls[control].update(arg);
-            }
+        self.update = function(args) {
+        	var layer = args.layer || false,
+        		marker = args.marker || false;
+
+        	if (layer !== false && controls.layer) {
+        		controls.layer.add(layer);
+        	}
+        	if (marker !== false && controls.marker) {
+        		controls.marker.add(marker);
+        	}
         }
 
         function _isAvailable(position) {
@@ -629,7 +726,7 @@
         }
     }
 
-    function _MapMarker(coords, mapObj, projection) {
+    function _MapMarker(coords, name, mapObj, projection) {
         var self = this,
             screenXY = [],
             map = d3.select(mapObj.getID()),
@@ -655,19 +752,25 @@
                 .style('top', top+'px');
         }
 
+        self.getCoords = function() {
+        	return coords;
+        }
+
+        self.getName = function() {
+        	return name;
+        }
+
         function dragstarted() {
             d3.event.sourceEvent.stopPropagation();
             offsetX = d3.event.sourceEvent.offsetX;
             offsetY = d3.event.sourceEvent.offsetY;
         }
-
         function dragged() {
             d3.select(this)
                 .style('left', (d3.event.x-offsetX) + 'px')
                 .style('top', (d3.event.y-offsetY) + 'px');
-            screenXY = [(d3.event.x+width-offsetX), (d3.event.y+height-offsetY)]
+            screenXY = [(d3.event.x+width-offsetX), (d3.event.y+height-offsetY)];
         }
-
         function dragended() {
             coords =  projection.invert(screenXY);
         }
@@ -678,30 +781,31 @@
         var self = this,
             //IDtag = id,
             layers = [],
-            layerIDs = 0;
+            layerIDs = 0,
+        	markers = [];
 
         var controls = null;
 
-        var minZoom = 7,
+        var minZoom = 5,
             maxZoom = 17,
             zoomAdjust = 8,
             defaultCoords = [-73.824, 42.686], // defaults to Albany, NY
             startLoc,
             startScale,
-            scaleRange;
+            scaleExtent;
         
         if (typeof options !== 'undefined') {
             startLoc = options.startLoc || defaultCoords;
             startScale = options.startScale || minZoom;
-            scaleRange = options.scaleRange || [minZoom, maxZoom];
+            scaleExtent = options.scaleExtent || [minZoom, maxZoom];
         } else {
             startLoc = defaultCoords;
             startScale = minZoom;
-            scaleRange = [minZoom, maxZoom];
+            scaleExtent = [minZoom, maxZoom];
         }
 
         startScale = 1 << (startScale + zoomAdjust);
-        scaleRange = [1 << (scaleRange[0] + zoomAdjust), 1 << (scaleRange[1] + zoomAdjust)];
+        scaleExtent = [1 << (scaleExtent[0] + zoomAdjust), 1 << (scaleExtent[1] + zoomAdjust)];
 
         var width = parseInt(d3.select(IDtag).style('width')),
             height = parseInt(d3.select(IDtag).style('height')),
@@ -719,7 +823,7 @@
 
         var zoom = d3.behavior.zoom()
             .scale(startScale)
-            .scaleExtent(scaleRange)
+            .scaleExtent(scaleExtent)
             .translate(projection(startLoc).map(function(x) { return -x; }))
             .on("zoom", _zoomMap);
 
@@ -804,7 +908,7 @@
                 }
 
                 if (controls !== null) {
-                    controls.update(layer);
+                	controls.update({layer: layer});
                 }
 
                 if (layers.length === 1) {
@@ -829,12 +933,24 @@
                 }
             }
         }
-        markers = [];
-        self.addMarker = function(coords) {
-            marker = new _MapMarker(coords, self, projection);
+
+        self.addMarker = function(coords, options) {
+        	var name = 'Marker ' + markers.length;
+        	if (typeof options !== 'undefined') {
+        		name = options.name || name;
+        	}
+            var marker = new _MapMarker(coords, name, self, projection);
             marker.update();
             markers.push(marker);
+
+            if (controls !== null) {
+            	controls.update({marker: marker});
+            }
+
             return self;
+        }
+        self.getMarkers = function() {
+        	return markers;
         }
 
         self.zoomMap = function() {

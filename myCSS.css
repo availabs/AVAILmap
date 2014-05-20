@@ -105,7 +105,8 @@ body {
   fill: #5d9a91;
 }
 .water-hover {
-  stroke: #7dbab1;
+  stroke: #9ddad1;
+  stroke-width: 2px;
   fill: #7dbab1;
 }
 
