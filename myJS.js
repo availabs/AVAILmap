@@ -17,6 +17,7 @@ window.onload = function(){
 		.addControl('zoom')
 		.addMarker([-73.824, 42.686], {name: 'UAlbany'})
 		.addMarker([-73.682446, 42.735232], {name: 'Troy'})
+		.addMarker([-76.47492, 42.691599], {name: 'Locke'})
 		.addControl('marker');
 	// map.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-land-usages",
 	// 					{styles:['land'], hover: true}));
