@@ -1,6 +1,6 @@
 (function() {
     var avl = {
-        version: "1.0.1-alpha"
+        version: "0.2.1-alpha"
     };
 
     // cache object constructor function
