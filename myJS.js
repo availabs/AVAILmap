@@ -4,14 +4,14 @@ rng = rng.reverse();
 
 window.onload = function(){
 	var map = avl.Map('#map', {startScale: 7})
-		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-buildings",
-			{styles:['building'], name:'Buildings', dataType: 'topojson', zIndex: 2}))
+		.addLayer(avl.TileLayer("http://{s}.tile.openstreetmap.us/vectiles-buildings/{z}/{x}/{y}.topojson",
+			{styles:['building'], name:'Buildings', zIndex: 2}))
 		.addControl('layer', 'top-left')
-		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-highroad",
-			{styles:['road'], properties:['kind'], name:'Roads', dataType: 'topojson', zIndex: 1}))
-		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-water-areas",
-			{styles:['water'], hover:[['water-hover', 'name']], dataType: 'topojson', zIndex: 0}))
-		// .addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-skeletron",
+		.addLayer(avl.TileLayer("http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.topojson",
+			{styles:['road'], properties:['kind'], name:'Roads', zIndex: 1}))
+		.addLayer(avl.TileLayer("http://{s}.tile.openstreetmap.us/vectiles-water-areas/{z}/{x}/{y}.topojson",
+			{styles:['water'], hover:[['water-hover', 'name']], zIndex: 0}))
+		// .addLayer(avl.TileLayer("http://{s}.tile.openstreetmap.us/vectiles-skeletron/{z}/{x}/{y}.topojson",
 		// 	{styles:['road-names']}))
 		.addControl('info', 'bottom-left')
 		.addControl('zoom')
@@ -19,7 +19,7 @@ window.onload = function(){
 		.addMarker([-73.682446, 42.735232], {name: 'Troy'})
 		.addMarker([-76.47492, 42.691599], {name: 'Locke'})
 		.addControl('marker');
-	// map.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-land-usages",
+	// map.addLayer(avl.TileLayer("http://{s}.tile.openstreetmap.us/vectiles-land-usages/{z}/{x}/{y}.topojson",
 	// 					{styles:['land'], hover: true}));
 	// map.addLayer(avl.TileLayer("http://localhost:8000/counties",
 	// 					{styles:['county'], hover: 'county-hover', zIndex: -1}));

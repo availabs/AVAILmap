@@ -1,6 +1,12 @@
 body {
   margin: 0;
 }
+#map {
+	width: 750px;
+	height: 500px;
+	margin: auto;
+	position: relative;
+}
 
 .map {
   position: relative;
@@ -32,7 +38,7 @@ body {
   background-color: rgba(96, 78, 108, 0.5);
   /*background: none;*/
   padding: 5px;
-  position: fixed;
+  position: absolute;
   text-align: center;
   color: #614e6c;
 }
