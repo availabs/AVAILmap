@@ -645,7 +645,7 @@
                 .on('click', function(d) {
             		projection
 					    //.scale(1 << 19)
-					    .center(d.getCoords()) // temporarily set center
+					    .center(d.coords()) // temporarily set center
 					    .translate([width / 2, height / 2])
 					    .translate(projection([0, 0])) // compute appropriate translate
 					    .center([0, 0]); // reset
@@ -759,12 +759,8 @@
             return self;
         }
 
-        self.id = function(id) {
-            if (id === undefined) {
-                return IDtag;
-            }
-            IDtag = id;
-            
+        self.id = function() {
+            return IDtag;
         }
 
         function dragstarted() {
@@ -940,7 +936,7 @@
         	if (typeof options !== 'undefined') {
         		name = options.name || name;
         	}
-            marker.setName(name);
+            marker.name(name);
             marker.update();
             markers.push(marker);
 
