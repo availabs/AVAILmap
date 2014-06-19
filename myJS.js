@@ -5,12 +5,12 @@ rng = rng.reverse();
 window.onload = function(){
 	var map = avl.Map('#map', {startScale: 7})
 		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-buildings",
-			{styles:['building'], name:'Buildings', dataType: 'topojson'}))
+			{styles:['building'], name:'Buildings', dataType: 'topojson', zIndex: 2}))
 		.addControl('layer', 'top-left')
 		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-highroad",
-			{styles:['road'], properties:['kind'], name:'Roads', dataType: 'topojson'}))
+			{styles:['road'], properties:['kind'], name:'Roads', dataType: 'topojson', zIndex: 1}))
 		.addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-water-areas",
-			{styles:['water'], hover:[['water-hover', 'name']], dataType: 'topojson'}))
+			{styles:['water'], hover:[['water-hover', 'name']], dataType: 'topojson', zIndex: 0}))
 		// .addLayer(avl.TileLayer("http://tile.openstreetmap.us/vectiles-skeletron",
 		// 	{styles:['road-names']}))
 		.addControl('info', 'bottom-left')

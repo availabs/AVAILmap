@@ -3,41 +3,62 @@
         version: "0.2.1-alpha"
     };
 
+    // XHR object constructor function
+    function _avlXHR(id, url, obj) {
+        var self = this,
+            _xhr = _getXHR();
+
+        self.get = function(callback) {
+            _xhr.get(function(error, data) {
+                if (callback !== undefined) {
+                    callback(error, data);
+                }
+            })
+        }
+
+        self.post = function(data, callback) {
+            _xhr.post(JSON.stringify(data), function(error, data) {
+                if (callback !== undefined) {
+                    callback(error, data);
+                }
+            })
+        }
+
+        self.abort = function() {
+            _xhr.abort();
+        }
+
+        self.delete = function() {
+            delete obj[id];
+        }
+
+        self.id = function(t) {
+            if (!t) {
+                return id;
+            } else {
+                id = t;
+                return self;
+            }
+        }
+
+        function _getXHR() {
+            return d3.xhr(url)
+                .response(function(request) {
+                    return JSON.parse(request.responseText);
+                })
+        }
+    }
+
     // cache object constructor function
     function _LayerCache() {
         var self = this,
-            cache = [];
+            cache = {};
 
         self.putJSON = function(json, id) {
-            cache.push(new _CacheObject(json, id));
+            cache[id] = json;
         }
-
         self.getJSON = function(id) {
-            var i = _findID(id);
-            if (i > 0) {
-                return cache[i].getJSON();
-            }
-            return null;
-        }
-
-        function _findID(id) {
-            for (i in cache) {
-                if (cache[i].getID() == id) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-        // CacheObject constructor
-        function _CacheObject(json, id) {
-            var self = this;
-
-            self.getID = function() {
-                return id;
-            }
-            self.getJSON = function() {
-                return json;
-            }
+            return cache[id];
         }
     }
 
@@ -55,7 +76,8 @@
             cache = new _LayerCache(),
             dataType,
             dataDecoder,
-            requests = [],  // Array to store XML HTTP Requests
+            visibility = 'visible',     // variable to track layer visibility
+            requests = {},  // Object to store XML HTTP Requests
             hover,          // false or an array containing an array of pairs.
                             // Each pair uses the following scheme:
                             //      [style, attribute_key]
@@ -70,8 +92,6 @@
                             // Assigns the classes to all objects on the layer.
 
             choros;         // Not implemented
-
-//{attr: 'aadt', domain: dmn, range: rng, style: 'stroke'}
 
         if (typeof options !== 'undefined') {
             drawFunc = options.func || _drawTile;
@@ -98,7 +118,7 @@
         if (dataDecoder === null) {
             switch(dataType) { 
                 case 'geojson':
-                    dataDecoder = _decode_geoJSON;
+                    dataDecoder = null;
                     break;
                 case 'topojson':
                     dataDecoder = _decode_topoJSON;
@@ -117,7 +137,6 @@
         self.getID = function() {
             return IDtag;
         }
-
         self.setID = function(id) {
             IDtag = id;
         }
@@ -125,7 +144,6 @@
         self.getURL = function() {
             return url;
         }
-
         self.setURL = function(url) {
             baseURL = url;
         }
@@ -133,7 +151,6 @@
         self.getDrawFunc = function() {
             return drawFunc;
         }
-
         self.setDrawFunc = function(func) {
             drawFunc = func;
         }
@@ -141,7 +158,6 @@
         self.getLayer = function() {
             return layer;
         }
-
         self.setLayer = function(l) {
             layer = l;
         }
@@ -227,49 +243,44 @@
             _removeAttributes(properties, props);
         }
 
-        self.abortXHR = function(d) {
-            var id = _generateTileID(d);
-            for (var i = requests.length-1; i >= 0; i--) {
-                if (requests[i].getTag() === id) {
-                    requests[i].abort();
-                    requests.splice(i, 1);
-                    break;
-                }
-            }
-        }
-
-        function _removeXHR(xhr) {
-            for (i in requests) {
-                if (requests[i] === xhr) {
-                    requests.splice(i, 1);
-                    break;
-                }
+        self.abortXHR = function(id) {
+            if (id in requests) {
+                requests[id].abort();
+                requests[id].delete();
             }
         }
 
         self.drawTile = function(SVG, d) {
-            var id = _generateTileID(d);
-            var json = cache.getJSON(id);
-            if (json === null) {
-                var xhr = new _Request(id),
-                    URL = _makeURL(d, baseURL);
-                requests.push(xhr);
-console.log('sending request');
-                xhr.setXHR(d3.json(URL, function(error, data) {
-                    _removeXHR(xhr);
+            var id = _generateTileID(d),
+                json = cache.getJSON(id);
+
+            if (json === undefined) {
+                var URL = _makeURL(d, baseURL),
+                    xhr = new _avlXHR(id, URL, requests);
+
+                requests[id] = xhr;
+
+                xhr.get(function(error, data) {
+                    xhr.delete();
+
                     if (error) {
                         return false;
                     }
-                    var json = dataDecoder(data);
-console.log('request returns', json);
+                    var json;
+                    if (dataDecoder !== null) {
+                        json = dataDecoder(data);
+                    } else {
+                        json = data;
+                    }
+
                     cache.putJSON(json, id);
                     drawFunc(SVG, d, tilePath, self, json);
-                }));
+                });
             } else {
                 drawFunc(SVG, d, tilePath, self, json);
             }
         }
-        var visibility = 'visible';
+
         self.getVisibility = function() {
             return visibility;
         }
@@ -286,38 +297,22 @@ console.log('request returns', json);
             return url;
         }
 
-        // XHR object constructor
-        function _Request(tag) {
-            var self = this,
-                _tag = tag,
-                _xhr = null;
-
-            self.getTag = function() {
-                return _tag;
-            }
-            self.getXHR = function() {
-                return _xhr;
-            }
-            self.setXHR = function(xhr) {
-                _xhr = xhr;
-            }
-            self.abort = function() {
-                _xhr.abort();
-            }
-        }
-
-        function _decode_geoJSON(data) {
-            return data;
-        }
         function _decode_topoJSON(data) {
             return topojson.feature(data, data.objects.vectile);
+        }
+    }
+
+    function RasterLayer(url, options) {
+        var self = this;
+
+        self.drawTile = function(DIV, d) {
+
         }
     }
 
     function _generateTileID(d) {
         return 'tile-' + d.join('-');
     }
-	var regex = /\d{4}\./;
 
     function _drawTile(SVG, d, tilePath, layer, json) {
         var k = (1 << d[2]) * 256;
@@ -325,6 +320,8 @@ console.log('request returns', json);
         var svg = d3.select(SVG);
 
         var pathLayerID = layer.getID();
+
+        var regex = /\d{4}\./;
 
         tilePath.projection()
             .translate([k / 2 - d[0] * 256, k / 2 - d[1] * 256])
@@ -360,17 +357,7 @@ console.log('request returns', json);
             	}
 				return segments.join('M');
 			})
-            .style('visibility', visibility)/*
-            .on('click', function(d) {
-            	console.log(d);
-            	var path = d3.select(this).attr('d');
-            	console.log(path);
-            	var segments = path.split('M');
-            	for (var i in segments) {
-            		console.log(segments[i]);
-            	}
-            	console.log(segments.join('M')==path);
-            })*/;
+            .style('visibility', visibility);
 
         var choros = layer.getChoros();
 
@@ -726,7 +713,7 @@ console.log('request returns', json);
         }
     }
 
-    function _MapMarker(coords, name, mapObj, projection) {
+    function _MapMarker(coords, IDtag, mapObj, projection) {
         var self = this,
             screenXY = [],
             map = d3.select(mapObj.getID()),
@@ -742,7 +729,8 @@ console.log('request returns', json);
             top = projection(coords)[1]-height,
             left = projection(coords)[0]-width,
             offsetX = 0,
-            offsetY = 0;
+            offsetY = 0,
+            name;
 
         self.update = function() {
             top = projection(coords)[1]-height;
@@ -750,14 +738,33 @@ console.log('request returns', json);
 
             marker.style('left', left+'px')
                 .style('top', top+'px');
+
+            return self;
         }
 
-        self.getCoords = function() {
-        	return coords;
+        self.coords = function(c) {
+            if (c === undefined) {
+        	   return coords;
+            }
+            coords = c;
+            self.update()
+            return self;
         }
 
-        self.getName = function() {
-        	return name;
+        self.name = function(n) {
+            if (n === undefined) {
+        	   return name;
+            }
+            name = n;
+            return self;
+        }
+
+        self.id = function(id) {
+            if (id === undefined) {
+                return IDtag;
+            }
+            IDtag = id;
+            
         }
 
         function dragstarted() {
@@ -782,6 +789,7 @@ console.log('request returns', json);
             //IDtag = id,
             layers = [],
             layerIDs = 0,
+            markerIDs = 0,
         	markers = [];
 
         var controls = null;
@@ -852,8 +860,9 @@ console.log('request returns', json);
 
             layerTiles.exit()
                 .each(function(d) {
+                    var id = _generateTileID(d), i;
                     for (i in layers) {
-                        layers[i].abortXHR(d);
+                        layers[i].abortXHR(id);
                     }
                 })
                 .remove();
@@ -873,7 +882,7 @@ console.log('request returns', json);
             }
         }
 
-        function _drawLayer(layerObj) {
+        self.drawLayer = function(layerObj) {
             var tiles = mapTile
                 .scale(zoom.scale())
                 .translate(zoom.translate())();
@@ -888,10 +897,6 @@ console.log('request returns', json);
                 });
         }
 
-        self.drawLayer = function(layerObj) {
-            _drawLayer(layerObj);
-        }
-
         self.addLayer = function(layer) {
             if (typeof layer !== 'undefined') {
                 layers.push(layer);
@@ -900,11 +905,12 @@ console.log('request returns', json);
                     return a.getZIndex() - b.getZIndex();
                 });
 
-                layer.setID('layer-'+(layerIDs++));
+                layer.setID('layer-'+(++layerIDs));
                 layer.setTilePath(tilePath);
                 layer.setMap(self);
+
                 if (layer.getName() === null) {
-                    layer.setName('Layer ' + (layers.length - 1));
+                    layer.setName(layer.getID());
                 }
 
                 if (controls !== null) {
@@ -914,7 +920,7 @@ console.log('request returns', json);
                 if (layers.length === 1) {
                     _zoomMap();
                 } else {
-                    _drawLayer(layer);
+                    self.drawLayer(layer);
                 }
             } else {
                 throw new ObjectException("No Layer Object argument");
@@ -923,23 +929,18 @@ console.log('request returns', json);
         }
 
         self.removeLayer = function(layer) {
-            var index = layers.indexOf(layer);
-            if (index !== -1) {
-                layers.splice(index, 1);
-                d3.selectAll('.'+layer.getID()).remove();
-
-                if (controls !== null) {
-                    controls.update(layer);
-                }
-            }
+            console.log("Not implemented")
         }
 
         self.addMarker = function(coords, options) {
-        	var name = 'Marker ' + markers.length;
+            var id = 'marker-'+ (++markerIDs),
+                marker = new _MapMarker(coords, id, self, projection),
+                name = id;
+
         	if (typeof options !== 'undefined') {
         		name = options.name || name;
         	}
-            var marker = new _MapMarker(coords, name, self, projection);
+            marker.setName(name);
             marker.update();
             markers.push(marker);
 
@@ -951,6 +952,14 @@ console.log('request returns', json);
         }
         self.getMarkers = function() {
         	return markers;
+        }
+
+        var rasterLayer = null;
+        self.addRasterLayer = function(rLayer) {
+            if (rasterLayer !== null) {
+                throw new ObjectException("A raster layer already exists!");
+            }
+            rasterLayer = rLayer;
         }
 
         self.zoomMap = function() {
