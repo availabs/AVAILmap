@@ -599,7 +599,7 @@
                 d3.select(this).selectAll('div')
                     .each(function(d, i) {
                         var el = d3.select(this);
-                        el.text(d.getName())
+                        el.text(d.name())
                             .style('padding', function() {
                                 var border = parseInt(el.style('border')),
                                     padding = parseInt(el.style('padding')),
