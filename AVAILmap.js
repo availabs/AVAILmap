@@ -761,7 +761,7 @@
         }
     }
 
-    function _MapMarker(coords, IDtag, mapObj, projection) {
+    function _MapMarker(coords, IDtag, mapObj, projection, name, draggable) {
         var self = this,
             screenXY = [],
             map = d3.select(mapObj.getID()),
@@ -770,15 +770,17 @@
                 .on("drag", dragged)
                 .on("dragend", dragended),
             marker = map.append('div')
-                .attr('class', 'avl-marker')
-                .call(drag),
+                .attr('class', 'avl-marker'),
             height = parseInt(marker.style('height')),
             width = parseInt(marker.style('width'))/2,
             top = projection(coords)[1]-height,
             left = projection(coords)[0]-width,
             offsetX = 0,
-            offsetY = 0,
-            name;
+            offsetY = 0;
+
+        if (draggable) {
+            marker.call(drag);
+        }
 
         self.update = function() {
             top = projection(coords)[1]-height;
@@ -1048,13 +1050,16 @@
 
         self.addMarker = function(coords, options) {
             var id = 'marker-'+ (markerIDs++),
-                marker = new _MapMarker(coords, id, self, projection),
-                name = id;
+                name = id,
+                drag = false;
 
-        	if (typeof options !== 'undefined') {
-        		name = options.name || name;
-        	}
-            marker.name(name);
+            if (typeof options !== 'undefined') {
+                name = options.name || name;
+                drag = options.drag || drag;
+            }
+
+            var marker = new _MapMarker(coords, id, self, projection, name, drag);
+
             marker.update();
             markers.push(marker);
 

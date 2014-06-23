@@ -16,7 +16,7 @@ window.onload = function(){
 		.addControl('info', 'bottom-left')
 		.addControl('zoom')
 		.addMarker([-73.824, 42.686], {name: 'UAlbany'})
-		.addMarker([-73.682446, 42.735232], {name: 'Troy'})
+		.addMarker([-73.682446, 42.735232], {name: 'Troy', drag: true})
 		.addMarker([-76.47492, 42.691599], {name: 'Locke'})
 		.addControl('marker')
 		.addLayer(avl.RasterLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
