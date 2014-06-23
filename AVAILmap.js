@@ -50,24 +50,105 @@
     }
 
     // cache object constructor function
-    function _LayerCache() {
+    function _TileLayerCache() {
         var self = this,
             cache = {};
 
-        self.putJSON = function(json, id) {
-            cache[id] = json;
+        self.putData = function(data, id) {
+            cache[id] = data;
         }
-        self.getJSON = function(id) {
+        self.getData = function(id) {
             return cache[id];
         }
     }
 
-    // tile layer constructor function
     function _TileLayer(url, options) {
         var self = this,
-            cache = new _LayerCache(),
+            cache = new _TileLayerCache(),
+            baseURL = url,
+            IDtag,
+            map,
+            name,
+            visibility = 'visible',     // variable to track layer visibility
+            requests = {};              // Object to store XML HTTP Requests
+            
+        if (typeof options !== 'undefined') {
+            name = options.name || null;
+        } else {
+            name = null;
+        }
+
+        function _addAttributes(lst, atts) {
+            var len = lst.length;
+            for (i in atts) {
+                if (lst.indexOf(atts[i] === -1))
+                    lst.push(atts[i]);
+            }
+            if (len !== lst.length) {
+                map.drawLayer(self);
+            }
+        }
+
+        function _removeAttributes(lst, atts) {
+            var len = lst.length;
+            for (var i = atts.length-1; i >= 0; i--) {
+                if (lst.indexOf(atts[i] !== -1))
+                    lst.splice(i, 1);
+            }
+            if (len !== lst.length) {
+                map.drawLayer(self);
+            }
+        }
+
+        self.getID = function() {
+            return IDtag;
+        }
+        self.setID = function(id) {
+            IDtag = id;
+        }
+
+        self.getURL = function() {
+            return url;
+        }
+        self.setURL = function(url) {
+            baseURL = url;
+        }
+
+        self.setMap = function(m) {
+            map = m;
+        }
+
+        self.getName = function() {
+            return name;
+        }
+        self.setName = function(n) {
+            name = n;
+        }
+
+        self.abortXHR = function(id) {
+            if (id in requests) {
+                requests[id].abort();
+                requests[id].delete();
+            }
+        }
+
+        self.getVisibility = function() {
+            return visibility;
+        }
+        self.hide = function() {
+            visibility = (visibility === 'visible' ? 'hidden' : 'visible');
+            d3.selectAll('.'+IDtag).style('visibility', visibility);
+        }
+    }
+
+    // tile layer constructor function
+    function _VectorLayer(url, options) {
+        _TileLayer.call(this, url, options);
+
+        var self = this,
+            cache = new _TileLayerCache(),
             dataType = /.([a-zA-Z]+)$/.exec(url)[1],
-            layer = null,
+            //layer = null,
             baseURL = url,
             drawFunc,
             zIndex,
@@ -100,7 +181,7 @@
             choros = options.choros || false;
             zIndex = options.zIndex || 0;
             hover = options.hover || false;
-            name = options.name || null;
+            //name = options.name || null;
             dataDecoder = options.decoder || null;
         } else {
             drawFunc = _drawTile;
@@ -109,7 +190,7 @@
             choros = false;
             zIndex = 0;
             hover = false;
-            name = null;
+            //name = null;
             dataDecoder = null;
         }
 
@@ -128,7 +209,7 @@
         			.range(choros[i].range);
         	}
         }
-
+/*
         self.getID = function() {
             return IDtag;
         }
@@ -142,25 +223,25 @@
         self.setURL = function(url) {
             baseURL = url;
         }
-
+*/
         self.getDrawFunc = function() {
             return drawFunc;
         }
         self.setDrawFunc = function(func) {
             drawFunc = func;
         }
-
+/*
         self.getLayer = function() {
             return layer;
         }
         self.setLayer = function(l) {
             layer = l;
         }
-
+*/
         self.setTilePath = function(tp) {
             tilePath = tp;
         }
-
+/*
         self.setMap = function(m) {
             map = m;
         }
@@ -171,11 +252,11 @@
         self.setName = function(n) {
             name = n;
         }
-
+*/
         self.getZIndex = function() {
             return zIndex;
         }
-
+/*
         function _addAttributes(lst, atts) {
             var len = lst.length;
             for (i in atts) {
@@ -197,7 +278,7 @@
                 map.drawLayer(self);
             }
         }
-
+*/
         self.getHover =function() {
             return hover;
         }
@@ -237,45 +318,42 @@
         self.removeProperties = function(props) {
             _removeAttributes(properties, props);
         }
-
+/*
         self.abortXHR = function(id) {
             if (id in requests) {
                 requests[id].abort();
                 requests[id].delete();
             }
         }
-
+*/
         self.drawTile = function(SVG, d) {
             var id = _generateTileID(d),
-                json = cache.getJSON(id);
+                json = cache.getData(id);
 
             if (json === undefined) {
-                var URL = _makeURL(d, baseURL),
+                var URL = _makeTileURL(d, baseURL),
                     xhr = new _avlXHR(id, URL, requests);
 
                 requests[id] = xhr;
 
-                xhr.get(function(error, data) {
+                xhr.get(function(error, json) {
                     xhr.delete();
 
                     if (error) {
                         return false;
                     }
-                    var json;
                     if (dataDecoder !== null) {
-                        json = dataDecoder(data);
-                    } else {
-                        json = data;
+                        json = dataDecoder(json);
                     }
 
-                    cache.putJSON(json, id);
+                    cache.putData(json, id);
                     drawFunc(SVG, d, tilePath, self, json);
                 });
             } else {
                 drawFunc(SVG, d, tilePath, self, json);
             }
         }
-
+/*
         self.getVisibility = function() {
             return visibility;
         }
@@ -283,26 +361,33 @@
             visibility = (visibility === 'visible' ? 'hidden' : 'visible');
             d3.selectAll('.'+IDtag).style('visibility', visibility);
         }
-
-        function _makeURL(d, url) {
-            url = url.replace(/{s}/, ["a", "b", "c"][(d[0] * 31 + d[1]) % 3]);
-            url = url.replace(/{z}/, d[2]);
-            url = url.replace(/{x}/, d[0]);
-            url = url.replace(/{y}/, d[1]);
-            return url;
-        }
-
+*/
         function _decode_topoJSON(data) {
             return topojson.feature(data, data.objects.vectile);
         }
     }
+    _VectorLayer.prototype = Object.create(_TileLayer.prototype);
+    _VectorLayer.prototype.constructor = _VectorLayer;
 
-    function RasterLayer(url, options) {
+    function _RasterLayer(url, options) {
+        _TileLayer.call(this, url, options);
+
         var self = this;
 
-        self.drawTile = function(DIV, d) {
-
+        self.drawTile = function(d) {
+            return _makeTileURL(d, url);
         }
+    }
+    _RasterLayer.prototype = Object.create(_TileLayer.prototype);
+    _RasterLayer.prototype.constructor = _RasterLayer;
+
+    function _makeTileURL(d, url) {
+        url = url.replace(/{s}/, ["a", "b", "c"][(d[0] * 31 + d[1]) % 3]);
+        url = url.replace(/{z}/, d[2]);
+        url = url.replace(/{x}/, d[0]);
+        url = url.replace(/{y}/, d[1]);
+
+        return url;
     }
 
     function _generateTileID(d) {
@@ -496,7 +581,7 @@
     _ZoomControl.prototype = Object.create(_Control.prototype);
     _ZoomControl.prototype.constructor = _ZoomControl;
 
-    function _LayerControl(mapObj, map, projection, zoom, position) {
+    function _TileLayerControl(mapObj, map, projection, zoom, position) {
 		_Control.call(this, map, 'zoom-control', position);
         var self = this,
             layers = mapObj.getLayers().slice();
@@ -558,8 +643,8 @@
                 });
         }
     }
-    _LayerControl.prototype = Object.create(_Control.prototype);
-    _LayerControl.prototype.constructor = _LayerControl;
+    _TileLayerControl.prototype = Object.create(_Control.prototype);
+    _TileLayerControl.prototype.constructor = _TileLayerControl;
 
     function _MarkerControl(mapObj, map, projection, zoom, position) {
 		_Control.call(this, map, 'zoom-control', position);
@@ -662,7 +747,7 @@
                 controls.zoom = new _ZoomControl(mapObj, map, zoom, position);
             }
             else if (type === 'layer' && !controls.layer) {
-                controls.layer = new _LayerControl(mapObj, map, projection, zoom, position);
+                controls.layer = new _TileLayerControl(mapObj, map, projection, zoom, position);
             }
             else if (type === 'marker' && !controls.marker) {
                 controls.marker = new _MarkerControl(mapObj, map, projection, zoom, position);
@@ -753,6 +838,8 @@
 
         var controls = null;
 
+        var rasterLayer = null;
+
         var minZoom = 5,
             maxZoom = 17,
             zoomAdjust = 8,
@@ -811,22 +898,35 @@
             projection
                 .scale(zoom.scale() / 2 / Math.PI)
                 .translate(zoom.translate());
+/*
+            var tileGroups = layersDiv
+                .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
+                .selectAll(".tile-group")
+                .data(tiles, function(d) { return d; });
 
-            var layerTiles = layersDiv
+            tileGroups.enter().append('g')
+                .attr('class', 'tile-group')
+                .each(
+
+                    append('svg')
+                    .attr("class", 'tile')
+                    .style("left", function(d) { return d[0] * 256 + "px"; })
+                    .style("top", function(d) { return d[1] * 256 + "px"; })
+                    .each(function(d) {
+                        for (i in layers) {
+                            layers[i].drawTile(this, d);
+                        }
+                    })
+                );
+
+
+*/
+            var vTiles = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile")
                 .data(tiles, function(d) { return d; });
 
-            layerTiles.exit()
-                .each(function(d) {
-                    var id = _generateTileID(d), i;
-                    for (i in layers) {
-                        layers[i].abortXHR(id);
-                    }
-                })
-                .remove();
-
-            layerTiles.enter().append('svg')
+            vTiles.enter().append('svg')
                 .attr("class", 'tile')
                 .style("left", function(d) { return d[0] * 256 + "px"; })
                 .style("top", function(d) { return d[1] * 256 + "px"; })
@@ -835,6 +935,31 @@
                         layers[i].drawTile(this, d);
                     }
                 });
+
+            vTiles.exit()
+                .each(function(d) {
+                    var id = _generateTileID(d), i;
+                    for (i in layers) {
+                        layers[i].abortXHR(id);
+                    }
+                })
+                .remove();
+
+            if (rasterLayer) {
+                var rTiles = layersDiv
+                    .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
+                    .selectAll(".r-tile")
+                    .data(tiles, function(d) { return d; });
+
+                rTiles.exit().remove();
+
+                rTiles.enter().append('img')
+                    .attr("class", 'r-tile')
+                    .style("left", function(d) { return d[0] * 256 + "px"; })
+                    .style("top", function(d) { return d[1] * 256 + "px"; })
+                    .attr('src', rasterLayer.drawTile);
+
+            }
 
             for (var i in markers) {
                 markers[i].update();
@@ -846,17 +971,42 @@
                 .scale(zoom.scale())
                 .translate(zoom.translate())();
 
-            var layerTiles = layersDiv
+            var vTiles = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile")
                 .data(tiles, function(d) { return d; });
 
-            layerTiles.each(function(d) {
+            vTiles.each(function(d) {
                     layerObj.drawTile(this, d);
                 });
         }
+        self.drawRasterLayer = function() {
+            var tiles = mapTile
+                .scale(zoom.scale())
+                .translate(zoom.translate())();
+
+            var rTiles = layersDiv
+                .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
+                .selectAll(".r-tile")
+                .data(tiles, function(d) { return d; });
+
+            rTiles.enter().append('img')
+                .attr("class", 'r-tile')
+                .style("left", function(d) { return d[0] * 256 + "px"; })
+                .style("top", function(d) { return d[1] * 256 + "px"; })
+                .attr('src', rasterLayer.drawTile);
+        }
 
         self.addLayer = function(layer) {
+            if (layer instanceof _VectorLayer) {
+                _addVectorLayer(layer);
+            } else {
+                _addRasterLayer(layer);
+            }
+            return self;
+        }
+
+        _addVectorLayer = function(layer) {
             if (typeof layer !== 'undefined') {
                 layers.push(layer);
 
@@ -887,8 +1037,13 @@
             return self;
         }
 
-        self.removeLayer = function(layer) {
-            console.log("Not implemented")
+        _addRasterLayer = function(layer) {
+            if (rasterLayer !== null) {
+                throw new ObjectException("A raster layer already exists!");
+            }
+            rasterLayer = layer;
+            self.drawRasterLayer();
+            return self;
         }
 
         self.addMarker = function(coords, options) {
@@ -911,14 +1066,6 @@
         }
         self.getMarkers = function() {
         	return markers;
-        }
-
-        var rasterLayer = null;
-        self.addRasterLayer = function(rLayer) {
-            if (rasterLayer !== null) {
-                throw new ObjectException("A raster layer already exists!");
-            }
-            rasterLayer = rLayer;
         }
 
         self.zoomMap = function() {
@@ -956,9 +1103,17 @@
         return "";
     }
 
-    avl.TileLayer = function(url, options) {
+    avl.RasterLayer = function(url, options) {
         if (typeof url !== 'undefined') {
-            return new _TileLayer(url, options);
+            return new _RasterLayer(url, options);
+        } else {
+            throw new ObjectException("You must specify a layer URL");
+        }
+    }
+
+    avl.VectorLayer = function(url, options) {
+        if (typeof url !== 'undefined') {
+            return new _VectorLayer(url, options);
         } else {
             throw new ObjectException("You must specify a layer URL");
         }

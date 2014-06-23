@@ -12,18 +12,26 @@ body {
   position: relative;
   overflow: hidden;
   display: block;
-  background-color: #E3D39B;
+  /*background-color: #E3D39B;*/
 }
 
 .layersDiv {
   position: absolute;
 }
 
+.r-tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  z-index: -1;
+  /*stroke: #000;*/
+}
+
 .tile {
   position: absolute;
   width: 256px;
   height: 256px;
-  stroke: #000;
+  /*stroke: #000;*/
 }
 
 .path {
