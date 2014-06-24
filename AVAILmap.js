@@ -63,7 +63,6 @@
 
     function _TileLayer(URL, options) {
         var self = this,
-            cache = new _TileLayerCache(),
             IDtag,
             map,
             name,
@@ -96,10 +95,6 @@
                 map.drawLayer(self);
             }
         }
-		
-		self.cache = function() {
-			return cache;
-		}
 
         self.id = function(id) {
 			if (id === undefined) {
@@ -147,7 +142,7 @@
             visibility = 'visible';     // variable to track layer visibility
 */
         var self = this,
-            //cache = new _TileLayerCache(),
+            cache = new _TileLayerCache(),
             dataType = /.([a-zA-Z]+)$/.exec(url)[1],
             //layer = null,
             //baseURL = url,
@@ -329,7 +324,7 @@
 
         self.drawTile = function(SVG, d) {
             var id = _generateTileID(d),
-                json = self.cache().data(id);
+                json = cache.data(id);
 
             if (json === undefined) {
                 var URL = _makeTileURL(d, self.url()),
@@ -347,7 +342,7 @@
                         json = dataDecoder(json);
                     }
 
-                    self.cache().data(id, json);
+                    cache.data(id, json);
                     drawFunc(SVG, d, tilePath, self, json);
                 });
             } else {
@@ -372,10 +367,8 @@
 
     function _RasterLayer(url, options) {
         _TileLayer.call(this, url, options);
-		
-        var self = this;
 
-        self.drawTile = function(d) {
+        this.drawTile = function(d) {
 			return _makeTileURL(d, url);
         }
     }
@@ -383,11 +376,11 @@
     _RasterLayer.prototype.constructor = _RasterLayer;
 
     function _makeTileURL(d, url) {
-        url = url.replace(/{s}/, ["a", "b", "c"][(d[0] * 31 + d[1]) % 3]);
+        url = url.replace(/{s}/, ["a", "b", "c"][(d[0]+d[1])%3]);
         url = url.replace(/{z}/, d[2]);
         url = url.replace(/{x}/, d[0]);
         url = url.replace(/{y}/, d[1]);
-
+		
         return url;
     }
 
@@ -411,7 +404,7 @@
         var visibility = layer.getVisibility(),
 			choros = layer.getChoros(),
 			hover = layer.getHover();
-
+			
         var paths = svg.selectAll('.'+pathLayerID)
             .data(json.features)
             .enter().append("path")
@@ -901,12 +894,12 @@
             projection
                 .scale(zoom.scale() / 2 / Math.PI)
                 .translate(zoom.translate());
-
+/*
             var tileGroups = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile-group")
                 .data(tiles, function(d) { return d; });
-
+				
             tileGroups.enter().append('g')
                 .attr('class', 'tile-group')
                 .each(function(d) {
@@ -939,8 +932,24 @@
                     }
                 })
                 .remove();
+*/
 
-/*
+            if (rasterLayer) {
+                var rTiles = layersDiv
+                    .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
+                    .selectAll(".r-tile")
+                    .data(tiles, function(d) { return d; });
+
+                rTiles.exit().remove();
+
+                rTiles.enter().append('img')
+                    .attr("class", 'r-tile')
+                    .style("left", function(d) { return d[0] * 256 + "px"; })
+                    .style("top", function(d) { return d[1] * 256 + "px"; })
+                    .attr('src', rasterLayer.drawTile);
+
+            }
+
             var vTiles = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile")
@@ -965,22 +974,6 @@
                 })
                 .remove();
 
-            if (rasterLayer) {
-                var rTiles = layersDiv
-                    .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
-                    .selectAll(".r-tile")
-                    .data(tiles, function(d) { return d; });
-
-                rTiles.exit().remove();
-
-                rTiles.enter().append('img')
-                    .attr("class", 'r-tile')
-                    .style("left", function(d) { return d[0] * 256 + "px"; })
-                    .style("top", function(d) { return d[1] * 256 + "px"; })
-                    .attr('src', rasterLayer.drawTile);
-
-            }
-*/
             for (var i in markers) {
                 markers[i].update();
             }
