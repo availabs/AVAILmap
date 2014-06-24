@@ -3,7 +3,7 @@ rng = ["#a50026","#d73027","#f46d43","#fdae61","#fee08b","#d9ef8b","#a6d96a","#6
 rng = rng.reverse();
 
 window.onload = function(){
-	var map = avl.Map('#map', {startScale: 7})
+	var map = avl.Map({startScale: 7})
 		.addLayer(avl.VectorLayer("http://{s}.tile.openstreetmap.us/vectiles-buildings/{z}/{x}/{y}.topojson",
 			{styles:['building'], name:'Buildings', zIndex: 2}))
 		.addControl('layer', 'top-left')
@@ -15,10 +15,10 @@ window.onload = function(){
 		// 	{styles:['road-names']}))
 		.addControl('info', 'bottom-left')
 		.addControl('zoom')
-		.addMarker([-73.824, 42.686], {name: 'UAlbany'})
-		.addMarker([-73.682446, 42.735232], {name: 'Troy', drag: true})
-		.addMarker([-76.47492, 42.691599], {name: 'Locke'})
+		.addMarker(avl.MapMarker([-73.824, 42.686], {name: 'UAlbany'}))
 		.addControl('marker')
+		.addMarker(avl.MapMarker([-73.682446, 42.735232], {name: 'Troy', drag: true}))
+		.addMarker(avl.MapMarker([-76.47492, 42.691599], {name: 'Locke'}))
 		.addLayer(avl.RasterLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
 	// map.addLayer(avl.VectorLayer("http://{s}.tile.openstreetmap.us/vectiles-land-usages/{z}/{x}/{y}.topojson",
 	// 					{styles:['land'], hover: true}));
