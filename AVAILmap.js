@@ -911,6 +911,14 @@
                 .attr('class', 'tile-group')
                 .each(function(d) {
 					var group = d3.select(this);
+					
+					if (rasterLayer) {
+						group.append('img')
+							.attr("class", 'r-tile')
+							.style("left", function() { return d[0] * 256 + "px"; })
+							.style("top", function() { return d[1] * 256 + "px"; })
+							.attr('src', rasterLayer.drawTile);
+					}
 
                     group.append('svg')
 						.attr("class", 'tile')
@@ -920,14 +928,7 @@
 							for (i in layers) {
 								layers[i].drawTile(this, d);
 							}
-						})
-					if (rasterLayer) {
-						group.append('img')
-							.attr("class", 'r-tile')
-							.style("left", function() { return d[0] * 256 + "px"; })
-							.style("top", function() { return d[1] * 256 + "px"; })
-							.attr('src', rasterLayer.drawTile);
-					}
+						});
                 });
 				
 			tileGroups.exit()
