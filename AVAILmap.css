@@ -1,0 +1,119 @@
+body {
+  margin: 0;
+}
+/*#map {
+	width: 750px;
+	height: 500px;
+	margin: auto;
+	position: relative;
+}*/
+
+.map {
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.layersDiv {
+  position: absolute;
+}
+
+.r-tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  z-index: -5;
+  /*stroke: #000;*/
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  /*stroke: #000;*/
+}
+
+.path {
+  fill: none;
+  stroke: #000;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* css for controls */
+.control {
+  background-color: rgba(96, 78, 108, 0.5);
+  /*background: none;*/
+  padding: 5px;
+  position: absolute;
+  text-align: center;
+  color: #614e6c;
+}
+/* buttons */
+.button {
+  height: 20px;
+  width: 20px;
+  margin: 2px;
+  padding: 2px;
+  line-height: 20px;
+  font-family: "sans serif";
+  background-color: #cbaf42;
+}
+.button:hover {
+  border: solid 2px #614e6c;
+  padding: 0px;
+}
+.list {
+  height: 20px;
+  margin: 2px;
+  padding: 2px 10px;
+  line-height: 20px;
+  font-family: "sans serif";
+  background-color: #cbaf42;
+}
+.list:hover {
+  border: solid 2px #614e6c;
+  padding: 0px 8px;
+}
+.inactive {
+  background-color: #ab8f22;
+}
+#info-text {
+  height: 21px;
+  margin: 2px;
+  padding: 2px 10px;
+  line-height: 23px;
+  font-family: "sans serif";
+  background-color: #cbaf42;
+}
+.bold {
+  font-weight: 900;
+  font-size: 25px;
+  line-height: 20px;
+}
+/* locations */
+.top-left {
+  top: 10px;
+  left: 10px;
+}
+.top-right {
+  top: 10px;
+  right: 10px;
+}
+.bottom-left {
+  bottom: 10px;
+  left: 10px;
+}
+.bottom-right {
+  bottom: 10px;
+  right: 10px;
+}
+/* end controls css */
+
+/* marker */
+.avl-marker {
+  height: 40px;
+  width: 20px;
+  background-color: #614e6c;
+  position: absolute;
+}
