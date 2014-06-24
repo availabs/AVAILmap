@@ -51,26 +51,23 @@
 
     // cache object constructor function
     function _TileLayerCache() {
-        var self = this,
-            cache = {};
-
-        self.putData = function(data, id) {
+        var cache = {};
+			
+		this.data = function(id, data) {
+			if (data === undefined) {
+				return cache[id];
+			}
             cache[id] = data;
-        }
-        self.getData = function(id) {
-            return cache[id];
-        }
+		}
     }
 
-    function _TileLayer(url, options) {
+    function _TileLayer(URL, options) {
         var self = this,
             cache = new _TileLayerCache(),
-            baseURL = url,
             IDtag,
             map,
             name,
-            visibility = 'visible',     // variable to track layer visibility
-            requests = {};              // Object to store XML HTTP Requests
+            visibility = 'visible';     // variable to track layer visibility
             
         if (typeof options !== 'undefined') {
             name = options.name || null;
@@ -99,37 +96,34 @@
                 map.drawLayer(self);
             }
         }
+		
+		self.cache = function() {
+			return cache;
+		}
 
-        self.getID = function() {
-            return IDtag;
-        }
-        self.setID = function(id) {
+        self.id = function(id) {
+			if (id === undefined) {
+				return IDtag;
+			}
             IDtag = id;
         }
 
-        self.getURL = function() {
-            return url;
-        }
-        self.setURL = function(url) {
-            baseURL = url;
+        self.url = function(url) {
+			if (url === undefined) {
+				return URL;
+			}
+            URL = url;
         }
 
         self.setMap = function(m) {
             map = m;
         }
 
-        self.getName = function() {
-            return name;
-        }
-        self.setName = function(n) {
+        self.name = function(n) {
+			if (n === undefined) {
+				return name;
+			}
             name = n;
-        }
-
-        self.abortXHR = function(id) {
-            if (id in requests) {
-                requests[id].abort();
-                requests[id].delete();
-            }
         }
 
         self.getVisibility = function() {
@@ -144,20 +138,27 @@
     // tile layer constructor function
     function _VectorLayer(url, options) {
         _TileLayer.call(this, url, options);
-
-        var self = this,
+/*
             cache = new _TileLayerCache(),
-            dataType = /.([a-zA-Z]+)$/.exec(url)[1],
-            //layer = null,
             baseURL = url,
-            drawFunc,
-            zIndex,
             IDtag,
-            tilePath,
             map,
             name,
+            visibility = 'visible';     // variable to track layer visibility
+*/
+        var self = this,
+            //cache = new _TileLayerCache(),
+            dataType = /.([a-zA-Z]+)$/.exec(url)[1],
+            //layer = null,
+            //baseURL = url,
+            drawFunc,
+            zIndex,
+            //IDtag,
+            tilePath,
+            //map,
+            //name,
             dataDecoder,
-            visibility = 'visible',     // variable to track layer visibility
+            //visibility = 'visible',     // variable to track layer visibility
             requests = {},  // Object to store XML HTTP Requests
             hover,          // false or an array containing an array of pairs.
                             // Each pair uses the following scheme:
@@ -279,7 +280,7 @@
             }
         }
 */
-        self.getHover =function() {
+        self.getHover = function() {
             return hover;
         }
         self.addHover = function(hvr) {
@@ -318,20 +319,20 @@
         self.removeProperties = function(props) {
             _removeAttributes(properties, props);
         }
-/*
+
         self.abortXHR = function(id) {
             if (id in requests) {
                 requests[id].abort();
                 requests[id].delete();
             }
         }
-*/
+
         self.drawTile = function(SVG, d) {
             var id = _generateTileID(d),
-                json = cache.getData(id);
+                json = self.cache().data(id);
 
             if (json === undefined) {
-                var URL = _makeTileURL(d, baseURL),
+                var URL = _makeTileURL(d, self.url()),
                     xhr = new _avlXHR(id, URL, requests);
 
                 requests[id] = xhr;
@@ -346,7 +347,7 @@
                         json = dataDecoder(json);
                     }
 
-                    cache.putData(json, id);
+                    self.cache().data(id, json);
                     drawFunc(SVG, d, tilePath, self, json);
                 });
             } else {
@@ -371,11 +372,11 @@
 
     function _RasterLayer(url, options) {
         _TileLayer.call(this, url, options);
-
+		
         var self = this;
 
         self.drawTile = function(d) {
-            return _makeTileURL(d, url);
+			return _makeTileURL(d, url);
         }
     }
     _RasterLayer.prototype = Object.create(_TileLayer.prototype);
@@ -399,7 +400,7 @@
 
         var svg = d3.select(SVG);
 
-        var pathLayerID = layer.getID();
+        var pathLayerID = layer.id();
 
         var regex = /\d{4}\./;
 
@@ -594,7 +595,7 @@
                 d3.select(this).selectAll('div')
                     .each(function(d, i) {
                         var el = d3.select(this);
-                        el.text(d.getName())
+                        el.text(d.name())
                             .style('padding', function() {
                                 var border = parseInt(el.style('border')),
                                     padding = parseInt(el.style('padding')),
@@ -900,7 +901,7 @@
             projection
                 .scale(zoom.scale() / 2 / Math.PI)
                 .translate(zoom.translate());
-/*
+
             var tileGroups = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile-group")
@@ -908,21 +909,37 @@
 
             tileGroups.enter().append('g')
                 .attr('class', 'tile-group')
-                .each(
+                .each(function(d) {
+					var group = d3.select(this);
 
-                    append('svg')
-                    .attr("class", 'tile')
-                    .style("left", function(d) { return d[0] * 256 + "px"; })
-                    .style("top", function(d) { return d[1] * 256 + "px"; })
-                    .each(function(d) {
-                        for (i in layers) {
-                            layers[i].drawTile(this, d);
-                        }
-                    })
-                );
+                    group.append('svg')
+						.attr("class", 'tile')
+						.style("left", function(d) { return d[0] * 256 + "px"; })
+						.style("top", function(d) { return d[1] * 256 + "px"; })
+						.each(function() {
+							for (i in layers) {
+								layers[i].drawTile(this, d);
+							}
+						})
+					if (rasterLayer) {
+						group.append('img')
+							.attr("class", 'r-tile')
+							.style("left", function() { return d[0] * 256 + "px"; })
+							.style("top", function() { return d[1] * 256 + "px"; })
+							.attr('src', rasterLayer.drawTile);
+					}
+                });
+				
+			tileGroups.exit()
+                .each(function(d) {
+                    var id = _generateTileID(d), i;
+                    for (i in layers) {
+                        layers[i].abortXHR(id);
+                    }
+                })
+                .remove();
 
-
-*/
+/*
             var vTiles = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile")
@@ -962,7 +979,7 @@
                     .attr('src', rasterLayer.drawTile);
 
             }
-
+*/
             for (var i in markers) {
                 markers[i].update();
             }
@@ -1016,12 +1033,12 @@
                     return a.getZIndex() - b.getZIndex();
                 });
 
-                layer.setID('layer-'+(layerIDs++));
+                layer.id('layer-'+(layerIDs++));
                 layer.setTilePath(tilePath);
                 layer.setMap(self);
 
-                if (layer.getName() === null) {
-                    layer.setName(layer.getID());
+                if (layer.name() === null) {
+                    layer.name(layer.id());
                 }
 
                 if (controls !== null) {
