@@ -313,11 +313,9 @@
     function _drawTile(SVG, d, tilePath, layer, json) {
         var k = (1 << d[2]) * 256;
 
-        var svg = d3.select(SVG);
-
         var pathLayerID = layer.id();
 
-        var regex = /\d{4}\./;
+        var regex = /\d{4}\./;  // this is needed to patch a d3 fill problem
 
         tilePath.projection()
             .translate([k / 2 - d[0] * 256, k / 2 - d[1] * 256])
@@ -326,8 +324,8 @@
         var visibility = layer.getVisibility(),
 			choros = layer.getChoros(),
 			hover = layer.getHover();
-			
-        var paths = svg.selectAll('.'+pathLayerID)
+
+        var paths = SVG.selectAll('.'+pathLayerID)
             .data(json.features)
             .enter().append("path")
             .attr('class', function(d) {
@@ -343,6 +341,7 @@
                 return cls;
             })
             .attr("d", function(d) {
+                // apply d3 fill problem patch
 				var path = tilePath(d);
 				if (!regex.test(path))
 					return path;
@@ -511,7 +510,7 @@
 
         _updateButtons();
 
-        self.add = function(layer) {
+        self.update = function(layer) {
         	if (layers.indexOf(layer) === -1) {
         		layers.push(layer);
 				_updateButtons();
@@ -551,11 +550,15 @@
 
         _updateButtons();
 
-        self.add = function(marker) {
-        	if (markers.indexOf(marker) === -1) {
+        self.update = function(marker) {
+            var index = markers.indexOf(marker);
+        	if (index === -1) {
         		markers.push(marker);
                 _updateButtons();
-        	}
+        	} else if (index > 0) {
+                markers.splice(index, 1);
+                _updateButtons();
+            }
         }
 
         function _updateButtons() {
@@ -621,7 +624,7 @@
 
         self.update = function(type, obj) {
 			if (type in controls) {
-				controls[type].add(obj);
+				controls[type].update(obj);
 			}
         }
     }
@@ -640,11 +643,14 @@
             offsetY = 0,
             name = null,
             IDtag,
-            draggable = false;
+            draggable = false,
+            minZoom = 0,
+            visibility = 'visible';
 
         if (typeof options !== 'undefined') {
             name = options.name || name;
             draggable = options.drag || draggable;
+            minZoom = options.minZoom || 0;
         }
 
         self.map = function(m) {
@@ -701,14 +707,29 @@
             return self;
         }
 
-        self.update = function() {
+        self.update = function(zoom) {
             top = projection(coords)[1]-height;
             left = projection(coords)[0]-width;
 
             marker.style('left', left+'px')
                 .style('top', top+'px');
 
+            visibility = (zoom > minZoom ? 'visible' : 'hidden');
+
+            marker.style('visibility', visibility);
+
             return self;
+        }
+
+        self.addTo = function(mapObj) {
+            mapObj.addMarker(self);
+        }
+
+        self.remove = function() {
+            marker.remove();
+        }
+        self.removeFrom = function(mapObj) {
+            mapObj.removeMarker(self);
         }
 
         function _dragstart() {
@@ -717,7 +738,7 @@
             offsetY = d3.event.sourceEvent.offsetY;
         }
         function _drag() {
-            d3.select(this)
+            marker
                 .style('left', (d3.event.x-offsetX) + 'px')
                 .style('top', (d3.event.y-offsetY) + 'px');
             screenXY = [(d3.event.x+width-offsetX), (d3.event.y+height-offsetY)];
@@ -730,13 +751,15 @@
     // map constructor function
     function _Map(IDtag, options, cntrls) {
         var self = this,
-            //IDtag = id,
             layers = [],
             layerIDs = 0,
             markerIDs = 0,
-        	markers = [];
+        	markers = [],
+            currentZoom;
 
-        var controls = null;
+        var alerts = []; // list of callbacks executed on zoom
+
+        var controls = null; // controls manager object
 
         var rasterLayer = null;
 
@@ -751,6 +774,7 @@
         if (typeof options !== 'undefined') {
             startLoc = options.startLoc || defaultCoords;
             startScale = options.startScale || minZoom;
+            minZoom = Math.min(minZoom, startScale);
             scaleExtent = options.scaleExtent || [minZoom, maxZoom];
         } else {
             startLoc = defaultCoords;
@@ -788,19 +812,25 @@
             .call(zoom);
 
         var layersDiv = map.append("div")
+            .attr('id', 'vector-layer')
             .attr("class", "layersDiv");
+
+        var rasterDiv;
 
         self.zoomMap = function() {
             var tiles = mapTile
                 .scale(zoom.scale())
                 .translate(zoom.translate())();
 
+            // tiles[0][2] is the current zoom
+            currentZoom = tiles[0][2];
+
             projection
                 .scale(zoom.scale() / 2 / Math.PI)
                 .translate(zoom.translate());
 
             if (rasterLayer) {
-                var rTiles = layersDiv
+                var rTiles = rasterDiv
                     .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                     .selectAll(".r-tile")
                     .data(tiles, function(d) { return d; });
@@ -825,8 +855,10 @@
                 .style("left", function(d) { return d[0] * 256 + "px"; })
                 .style("top", function(d) { return d[1] * 256 + "px"; })
                 .each(function(d) {
+                    var SVG = d3.select(this);
+
                     for (i in layers) {
-                        layers[i].drawTile(this, d);
+                        layers[i].drawTile(SVG, d);
                     }
                 });
 
@@ -840,7 +872,10 @@
                 .remove();
 
             for (var i in markers) {
-                markers[i].update();
+                markers[i].update(currentZoom);
+            }
+            for (var i in alerts) {
+                alerts[i]();
             }
         }
 
@@ -849,13 +884,15 @@
                 .scale(zoom.scale())
                 .translate(zoom.translate())();
 
+            currentZoom = tiles[0][2];
+
             var vTiles = layersDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".tile")
                 .data(tiles, function(d) { return d; });
 
             vTiles.each(function(d) {
-                    layerObj.drawTile(this, d);
+                    layerObj.drawTile(d3.select(this), d);
                 });
         }
         self.drawRasterLayer = function() {
@@ -863,7 +900,7 @@
                 .scale(zoom.scale())
                 .translate(zoom.translate())();
 
-            var rTiles = layersDiv
+            var rTiles = rasterDiv
                 .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                 .selectAll(".r-tile")
                 .data(tiles, function(d) { return d; });
@@ -923,6 +960,12 @@
                 if (layer.name() === null) {
                     layer.name(layer.id());
                 }
+
+                rasterDiv = map.append("div")
+                    .attr('id', 'raster-layer')
+                    .attr("class", "layersDiv")
+                    .style('z-index', -5);
+
                 rasterLayer = layer;
                 self.drawRasterLayer();
             } else {
@@ -944,13 +987,29 @@
             }
             marker.map(map);
             marker.projection(projection);
-            marker.update();
+            marker.update(currentZoom);
 
             if (controls !== null) {
             	controls.update('marker', marker);
             }
 
             return self;
+        }
+        self.removeMarker = function(marker) {
+            var index = markers.indexOf(marker);
+            if (index !== -1) {
+                marker.remove();
+
+                markers.splice(index, 1);
+
+                for (var i in markers) {
+                    markers[i].update(currentZoom);
+                }
+            }
+
+            if (controls !== null) {
+                controls.update('marker', marker);
+            }
         }
         self.getMarkers = function() {
         	return markers;
@@ -966,6 +1025,16 @@
             }
             controls.addControl(type, position);
             return self;
+        }
+
+        self.addAlert = function(callback) {
+            alerts.push(callback);
+        }
+        self.projection = function() {
+            return projection;
+        }
+        self.zoom = function() {
+            return zoom;
         }
     }
 

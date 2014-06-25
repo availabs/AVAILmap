@@ -33,3 +33,11 @@
 .type-1 {
   stroke-width: 4px;
 }
+
+.state {
+  opacity: .1;
+  fill: #f00;
+}
+.state-hover {
+  opacity: .75;
+}
