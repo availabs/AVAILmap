@@ -7,8 +7,8 @@ window.onload = function(){
 		.addLayer(avl.VectorLayer("http://{s}.tile.openstreetmap.us/vectiles-buildings/{z}/{x}/{y}.topojson",
 			{styles:['building'], name:'Buildings', zIndex: 2}))
 		.addControl('layer', 'top-left')
-		// .addLayer(avl.VectorLayer("http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.topojson",
-		// 	{styles:['road'], properties:['kind'], name:'Roads', zIndex: 1}))
+		.addLayer(avl.VectorLayer("http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.topojson",
+			{styles:['road'], properties:['kind'], name:'Roads', zIndex: 1}))
 
 		// .addLayer(avl.VectorLayer("http://{s}.tile.openstreetmap.us/vectiles-water-areas/{z}/{x}/{y}.topojson",
 		// 	{styles:['water'], hover:[['water-hover', 'name']], zIndex: 0}))
@@ -24,11 +24,11 @@ window.onload = function(){
 		.addLayer(avl.RasterLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
 
 	map.addLayer(avl.VectorLayer("http://localhost:8000/roads/{z}/{x}/{y}.topojson",
-		{properties:['type'], name: 'HPMS',
+		{properties:['type'], name: 'NY HPMS',
 		 choros: [{attr: 'aadt', domain: dmn, range: rng, style: 'stroke'}]}));
 
-	map.addLayer(avl.VectorLayer("http://localhost:8000/states/{z}/{x}/{y}.topojson",
-		{styles:['state'], name: 'States', func: _draw}));
+	// map.addLayer(avl.VectorLayer("http://localhost:8000/states/{z}/{x}/{y}.topojson",
+	// 	{styles:['state'], name: 'States', func: _draw}));
 	
 	var marker = avl.MapMarker([-73.682446, 42.735232], {name: 'Troy', drag: true});
 	marker.addTo(map);
@@ -98,12 +98,28 @@ window.onload = function(){
 	                });
 	        })
 	        .on('click', function(d) {
-
 				var projection = map.projection(),
-					path = d3.geo.path().projection(projection);
+					zoom = map.zoom();
 
-	        	console.log(JSON_, d.properties.tag, JSON_[k][d.properties.tag])
-	        	console.log(path.bounds(JSON_[k][d.properties.tag]))
+				zoom.scale(1<<15);
+	            projection
+	                .scale(zoom.scale() / 2 / Math.PI);
+
+				var	path = d3.geo.path().projection(projection),
+					centroid = projection.invert(path.centroid(JSON_[k][d.properties.tag])),
+					dims = map.dimensions(),
+					width = dims[0],
+					height = dims[1];
+
+	            projection
+	                .center(centroid)
+	                .translate([width / 2, height / 2])
+	                .translate(projection([0, 0]))
+	                .center([0, 0]);
+
+	            zoom.translate(projection.translate());
+
+	            map.zoomMap();
 	        });
 	}
 

@@ -35,9 +35,10 @@
 }
 
 .state {
-  opacity: .1;
-  fill: #f00;
+  opacity: .05;
+  stroke: #000;
+  fill: #4575b4;
 }
 .state-hover {
-  opacity: .75;
+  opacity: .25;
 }

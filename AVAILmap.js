@@ -757,8 +757,6 @@
         	markers = [],
             currentZoom;
 
-        var alerts = []; // list of callbacks executed on zoom
-
         var controls = null; // controls manager object
 
         var rasterLayer = null;
@@ -873,9 +871,6 @@
 
             for (var i in markers) {
                 markers[i].update(currentZoom);
-            }
-            for (var i in alerts) {
-                alerts[i]();
             }
         }
 
@@ -1027,14 +1022,14 @@
             return self;
         }
 
-        self.addAlert = function(callback) {
-            alerts.push(callback);
-        }
         self.projection = function() {
             return projection;
         }
         self.zoom = function() {
             return zoom;
+        }
+        self.dimensions = function() {
+            return [width, height];
         }
     }
 
