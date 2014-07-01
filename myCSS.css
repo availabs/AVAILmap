@@ -1,18 +1,3 @@
-.building {
-  stroke: #070;
-  fill: #070;
-}
-
-.water {
-  stroke: #5d9a91;
-  fill: #5d9a91;
-}
-.water-hover {
-  stroke: #9ddad1;
-  stroke-width: 2px;
-  fill: #7dbab1;
-}
-
 .road {
   stroke: #777;
 }
@@ -28,17 +13,4 @@
 .kind-minor_road {
   stroke-width: 1px;
   stroke: #cc9500;
-}
-
-.type-1 {
-  stroke-width: 4px;
-}
-
-.state {
-  opacity: .05;
-  stroke: #000;
-  fill: #4575b4;
-}
-.state-hover {
-  opacity: .25;
 }
