@@ -454,14 +454,16 @@
         zoomButtons.append('div')
             .attr('class', 'button active bold')
             .text('+')
-            .on('mouseup', function() {
+            .on('click', function() {
+                d3.event.stopPropagation();
                 _clicked(1);
             })
 
         zoomButtons.append('div')
             .attr('class', 'button active bold')
             .text('-')
-            .on('mouseup', function() {
+            .on('click', function() {
+                d3.event.stopPropagation();
                 _clicked(-1);
             })
 
@@ -531,6 +533,7 @@
         }
 
         function _hide(d) {
+            d3.event.stopPropagation();
             d.hide();
             var inactive = (d.getVisibility() === 'hidden' ? true : false);
             d3.select(this).classed('inactive', inactive);
@@ -575,6 +578,7 @@
         }
 
         function _zoomTo(d) {
+            d3.event.stopPropagation();
             projection
                 .center(d.coords()) // temporarily set center
                 .translate([width / 2, height / 2])
@@ -807,7 +811,10 @@
             .attr("class", "map")
             .style("width", width + "px")
             .style("height", height + "px")
-            .call(zoom);
+            .call(zoom)
+            .on("dragstart", function() {
+                d3.event.sourceEvent.stopPropagation(); // silence other listeners
+            });
 
         var layersDiv = map.append("div")
             .attr('id', 'vector-layer')
