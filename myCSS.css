@@ -1,3 +1,8 @@
+.building {
+	fill: #0a0;
+	stroke: none;
+}
+
 .road {
   stroke: #777;
 }

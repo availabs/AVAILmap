@@ -649,12 +649,16 @@
             IDtag,
             draggable = false,
             minZoom = 0,
-            visibility = 'visible';
+            visibility = 'visible',
+            BGcolor = '#614e6c',
+            click = null;
 
         if (typeof options !== 'undefined') {
             name = options.name || name;
             draggable = options.drag || draggable;
             minZoom = options.minZoom || 0;
+            BGcolor = options.BGcolor || BGcolor;
+            click = options.click || click;
         }
 
         self.map = function(m) {
@@ -663,7 +667,16 @@
             }
             map = m;
             marker = map.append('div')
-                .attr('class', 'avl-marker');
+                .attr('class', 'avl-marker')
+                .style('background', BGcolor);
+
+            if (click) {
+                marker.on('click', function() {
+                    if (d3.event.defaultPrevented) return;
+                    d3.event.stopPropagation();
+                    click(name);
+                });
+            }
 
             if (draggable) {
                 marker.call(d3.behavior.drag()
