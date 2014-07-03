@@ -1,16 +1,6 @@
 .building {
-  stroke: #070;
-  fill: #070;
-}
-
-.water {
-  stroke: #5d9a91;
-  fill: #5d9a91;
-}
-.water-hover {
-  stroke: #9ddad1;
-  stroke-width: 2px;
-  fill: #7dbab1;
+	fill: #0a0;
+	stroke: none;
 }
 
 .road {
@@ -28,8 +18,4 @@
 .kind-minor_road {
   stroke-width: 1px;
   stroke: #cc9500;
-}
-
-.type-1 {
-  stroke-width: 4px;
 }

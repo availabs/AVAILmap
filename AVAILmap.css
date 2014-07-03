@@ -1,12 +1,6 @@
 body {
   margin: 0;
 }
-/*#map {
-	width: 750px;
-	height: 500px;
-	margin: auto;
-	position: relative;
-}*/
 
 .map {
   position: relative;
@@ -22,7 +16,6 @@ body {
   position: absolute;
   width: 256px;
   height: 256px;
-  z-index: -5;
   /*stroke: #000;*/
 }
 
