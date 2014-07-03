@@ -15,6 +15,10 @@ window.onload = function(){
 		.addControl('marker')
 		.addMarker(avl.MapMarker([-76.47492, 42.691599], {name: 'Locke'}))
 		.addLayer(avl.RasterLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
+
+	// var layer = avl.VectorLayer("http://localhost:8080/{z}/{x}/{y}", {dataType: 'geojson'});
+
+	// map.addLayer(layer);	
 	
 	var marker = avl.MapMarker([-73.682446, 42.735232], {name: 'Troy', drag: true});
 	marker.addTo(map);

@@ -135,26 +135,33 @@
         _TileLayer.call(this, url, options);
         var self = this,
             cache = new _TileLayerCache(),
-            dataType = /.([a-zA-Z]+)$/.exec(url)[1],
-            drawFunc,
-            zIndex,
+            dataType = null,// = /.([a-zA-Z]+)$/.exec(url)[1],
+            drawFunc = _drawTile,
+            zIndex = 0,
             tilePath,
-            dataDecoder,
+            dataDecoder = null,
             requests = {},  // Object to store XML HTTP Requests
-            hover,          // false or an array containing an array of pairs.
+            hover = null,          // false or an array containing an array of pairs.
                             // Each pair uses the following scheme:
                             //      [style, attribute_key]
                             // This applies the style to all objects with the same value
                             //      from the objects' attribute_key when the object is moused over
-            properties,     // Array of geoJSON property names.
+            properties = [],     // Array of geoJSON property names.
                             // Creates classes from specified geoJSON properties.
                             // Each class is named using the following scheme:
                             //      .attribute_key-attribute_value
 
-            styles,         // Array of class names.
+            styles = [],         // Array of class names.
                             // Assigns the classes to all objects on the layer.
 
-            choros;         // Not implemented
+            choros = null;         // Not implemented
+
+        // if a data type extension is supplied at the end of the URL,
+        // then retrieve that as the data type.
+        var regex = /.([a-zA-Z]+)$/;
+        if (regex.test(url)) {
+            dataType = regex.exec(url)[1];
+        }
 			
         if (typeof options !== 'undefined') {
             drawFunc = options.func || _drawTile;
@@ -164,17 +171,13 @@
             zIndex = options.zIndex || 0;
             hover = options.hover || false;
             dataDecoder = options.decoder || null;
-        } else {
-            drawFunc = _drawTile;
-            styles = [];
-            properties = [];
-            choros = false;
-            zIndex = 0;
-            hover = false;
-            dataDecoder = null;
+            // dataType defaults to geojson, then is set to any url extension type,
+            // and finally can be overridden by setting a datatype in options
+            dataType = options.dataType || (dataType || 'geojson');
         }
-
-        if (dataDecoder === null) {
+        // if a datadecoder was not supplied, then check dataType
+        // to see if one is needed and available
+        if (!dataDecoder) {
             switch(dataType) {
                 case 'topojson':
                     dataDecoder = _decode_topoJSON;
@@ -182,12 +185,14 @@
             }
         }
 
-        for (var i in choros) {
-        	if ('domain' in choros[i]) {
-        		choros[i].scale = d3.scale.quantize()
-        			.domain(choros[i].domain)
-        			.range(choros[i].range);
-        	}
+        if (choros) {
+            for (var i in choros) {
+            	if ('domain' in choros[i]) {
+            		choros[i].scale = d3.scale.quantize()
+            			.domain(choros[i].domain)
+            			.range(choros[i].range);
+            	}
+            }
         }
 
         self.getDrawFunc = function() {
@@ -266,9 +271,9 @@
                     xhr.delete();
 
                     if (error) {
-                        return false;
+                        throw error;
                     }
-                    if (dataDecoder !== null) {
+                    if (dataDecoder) {
                         json = dataDecoder(json);
                     }
 
@@ -339,7 +344,7 @@
                     cls += ' ' + style;
                 });
                 return cls;
-            })
+            })/*
             .attr("d", function(d) {
                 // apply d3 fill problem patch
 				var path = tilePath(d);
@@ -353,10 +358,11 @@
             		}
             	}
 				return segments.join('M');
-			})
+			})*/
+            .attr('d', tilePath)
             .style('visibility', visibility);
 
-        if (choros !== false) {
+        if (choros) {
 			paths.each(function(d) {
                 var path = d3.select(this);
                 choros.forEach(function(chr) {
@@ -365,7 +371,7 @@
             });
         }
 
-        if (hover !== false) {
+        if (hover) {
             paths.each(function(d) {
                 var path = d3.select(this);
                 hover.forEach(function(hvr) {
@@ -724,6 +730,21 @@
             return self;
         }
 
+        self.BGcolor = function(bg) {
+            if(!bg) {
+                return BGcolor;
+            }
+            BGcolor = bg;
+            marker.style('background', BGcolor);
+            return self;
+        }
+
+        self.click = function(c) {
+            if(!c) {
+                return
+            }
+        }
+
         self.update = function(zoom) {
             top = projection(coords)[1]-height;
             left = projection(coords)[0]-width;
@@ -778,27 +799,24 @@
 
         var rasterLayer = null;
 
-        var minZoom = 5,
+        var zoomAdjust = 8; // needed to adjust start zoom
+
+        var minZoom = 4,
             maxZoom = 17,
-            zoomAdjust = 8,
-            defaultCoords = [-73.824, 42.686], // defaults to Albany, NY
-            startLoc,
-            startScale,
-            scaleExtent;
+            startZoom = minZoom,
+            startLoc = [-73.824, 42.686], // defaults to Albany, NY
+            zoomExtent;
         
         if (typeof options !== 'undefined') {
-            startLoc = options.startLoc || defaultCoords;
-            startScale = options.startScale || minZoom;
-            minZoom = Math.min(minZoom, startScale);
-            scaleExtent = options.scaleExtent || [minZoom, maxZoom];
-        } else {
-            startLoc = defaultCoords;
-            startScale = minZoom;
-            scaleExtent = [minZoom, maxZoom];
+            startLoc = options.startLoc || startLoc;
+            minZoom = options.minZoom || minZoom;
+            maxZoom = options.maxZoom || maxZoom;
+            startZoom = options.startZoom || minZoom;
         }
+        maxZoom = Math.min(17, maxZoom);
 
-        startScale = 1 << (startScale + zoomAdjust);
-        scaleExtent = [1 << (scaleExtent[0] + zoomAdjust), 1 << (scaleExtent[1] + zoomAdjust)];
+        startZoom = 1 << (startZoom + zoomAdjust);
+        zoomExtent = [1 << (minZoom + zoomAdjust), 1 << (maxZoom + zoomAdjust)];
 
         var width = parseInt(d3.select(IDtag).style('width')),
             height = parseInt(d3.select(IDtag).style('height')),
@@ -807,7 +825,7 @@
         var mapTile = d3.geo.tile().size([width, height]);
 
         var projection  = d3.geo.mercator()
-            .scale((startScale) / 2 / Math.PI)
+            .scale(startZoom / 2 / Math.PI)
             .translate([-width / 2, -height / 2]);
 
         var tileProjection = d3.geo.mercator();
@@ -815,8 +833,8 @@
         var tilePath = d3.geo.path().projection(tileProjection);
 
         var zoom = d3.behavior.zoom()
-            .scale(startScale)
-            .scaleExtent(scaleExtent)
+            .scale(startZoom)
+            .scaleExtent(zoomExtent)
             .translate(projection(startLoc).map(function(x) { return -x; }))
             .on("zoom", function() { self.zoomMap(); });
 
@@ -829,11 +847,8 @@
                 d3.event.sourceEvent.stopPropagation(); // silence other listeners
             });
 
-        var layersDiv = map.append("div")
-            .attr('id', 'vector-layer')
-            .attr("class", "layersDiv");
-
-        var rasterDiv;
+        var layersDiv,
+            rasterDiv;
 
         self.zoomMap = function() {
             var tiles = mapTile
@@ -847,7 +862,7 @@
                 .scale(zoom.scale() / 2 / Math.PI)
                 .translate(zoom.translate());
 
-            if (rasterLayer) {
+            if (rasterDiv) {
                 var rTiles = rasterDiv
                     .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
                     .selectAll(".r-tile")
@@ -862,37 +877,39 @@
                     .attr('src', rasterLayer.drawTile);
 
             }
+            if (layersDiv) {
+                var vTiles = layersDiv
+                    .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
+                    .selectAll(".tile")
+                    .data(tiles, function(d) { return d; });
 
-            var vTiles = layersDiv
-                .style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))
-                .selectAll(".tile")
-                .data(tiles, function(d) { return d; });
+                vTiles.enter().append('svg')
+                    .attr("class", 'tile')
+                    .style("left", function(d) { return d[0] * 256 + "px"; })
+                    .style("top", function(d) { return d[1] * 256 + "px"; })
+                    .each(function(d) {
+                        var SVG = d3.select(this);
 
-            vTiles.enter().append('svg')
-                .attr("class", 'tile')
-                .style("left", function(d) { return d[0] * 256 + "px"; })
-                .style("top", function(d) { return d[1] * 256 + "px"; })
-                .each(function(d) {
-                    var SVG = d3.select(this);
+                        for (i in layers) {
+                            layers[i].drawTile(SVG, d);
+                        }
+                    });
 
-                    for (i in layers) {
-                        layers[i].drawTile(SVG, d);
-                    }
-                });
-
-            vTiles.exit()
-                .each(function(d) {
-                    var id = _generateTileID(d), i;
-                    for (i in layers) {
-                        layers[i].abortXHR(id);
-                    }
-                })
-                .remove();
+                vTiles.exit()
+                    .each(function(d) {
+                        var id = _generateTileID(d), i;
+                        for (i in layers) {
+                            layers[i].abortXHR(id);
+                        }
+                    })
+                    .remove();
+            }
 
             for (var i in markers) {
                 markers[i].update(currentZoom);
             }
         }
+        self.zoomMap();
 
         self.drawLayer = function(layerObj) {
             var tiles = mapTile
@@ -956,11 +973,12 @@
                 	controls.update('layer', layer);
                 }
 
-                if (layers.length === 1) {
-                    self.zoomMap();
-                } else {
-                    self.drawLayer(layer);
+                if (!layersDiv) {
+                    layersDiv = map.append("div")
+                        .attr('id', 'vector-layer')
+                        .attr("class", "layersDiv");
                 }
+                self.drawLayer(layer);
             } else {
                 throw new AVAILmapException("No Layer Object argument");
             }
@@ -976,12 +994,13 @@
                     layer.name(layer.id());
                 }
 
+                rasterLayer = layer;
+
                 rasterDiv = map.append("div")
                     .attr('id', 'raster-layer')
                     .attr("class", "layersDiv")
                     .style('z-index', -5);
 
-                rasterLayer = layer;
                 self.drawRasterLayer();
             } else {
                 throw new AVAILmapException("No Layer Object argument");
