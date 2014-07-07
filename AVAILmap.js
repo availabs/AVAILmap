@@ -271,7 +271,7 @@
                     xhr.delete();
 
                     if (error) {
-                        throw error;
+                        return;
                     }
                     if (dataDecoder) {
                         json = dataDecoder(json);
@@ -599,24 +599,72 @@
     _MarkerControl.prototype = Object.create(_Control.prototype);
     _MarkerControl.prototype.constructor = _MarkerControl;
 
+    function _CustomControl(map, position) {
+        _Control.call(this, map, 'avl-custom-control', position);
+
+        var self = this,
+            name = 'Custom Control';
+
+        var customControl = self.DOMel;
+
+        var label = customControl.append('div')
+            .attr('class', 'list active');
+
+        var callback = null;
+
+        self.click = function(c) {
+            if (c===undefined && callback) {
+                return callback(self);
+            } else if (c===null) {
+                customControl.on('click', null);
+                return callback = null;
+            }
+            callback = c;
+            customControl.on('click', function() {
+                if (d3.event.defaultPrevented) return;
+                d3.event.stopPropagation();
+                callback(self);
+            });
+            return self;
+        }
+
+        self.name = function(n) {
+            if (!n) {
+                return name;
+            }
+            name = n;
+            label.text(name);
+            return self;
+        }
+        // this function toggles the custom control on and off. If the optional boolean
+        // argument is passed, then the display will be turned on if true and
+        // turned off if false.
+        self.toggle = function(t) {
+            if (t) {
+                customControl.style('display', 'block');
+            } else if (t === false) {
+                customControl.style('display', 'none');
+            } else {
+                var display = (customControl.style('display') === 'block' ? 'none' : 'block');
+                customControl.style('display', display);
+            }
+        }
+    }
+    _CustomControl.prototype = Object.create(_Control.prototype);
+    _CustomControl.prototype.constructor = _CustomControl;
+
     // main controls container constructor function
     function _Controls(mapObj, map, projection, zoom) {
         var self = this,
         	controls = {},
+            customControls = {},
+            customControlsIDs = 0,
 			allPositions = ['top-right', 'bottom-right', 'bottom-left', 'top-left'],
             positionsUsed = {'top-right': false, 'bottom-right': false,
 							 'bottom-left': false, 'top-left': false};
 
         self.addControl = function(type, position) {
-			position = position || 'top-right';
-			
-			var index = allPositions.indexOf(position);
-			
-			while (positionsUsed[position]) {
-				index = (index + 1) % allPositions.length;
-				position = allPositions[index];
-			}
-			positionsUsed[position] = true;
+			position = _getPosition(position);
 			
             if (type === 'info' && !controls.info) {
                 controls.info = new _InfoControl(map, projection, zoom, position);
@@ -630,6 +678,36 @@
             else if (type === 'marker' && !controls.marker) {
                 controls.marker = new _MarkerControl(mapObj, map, projection, zoom, position);
             }
+        }
+        function _getPosition(pos) {
+            pos = pos || 'top-right';
+            
+            var index = allPositions.indexOf(pos);
+            
+            while (positionsUsed[pos]) {
+                index = (index + 1) % allPositions.length;
+                pos = allPositions[index];
+            }
+            positionsUsed[pos] = true;
+
+            return pos;
+        }
+        self.customControl = function(options) {
+            var position = 'top-right',
+                name = 'Custom Control ' + customControlsIDs++;
+
+            if (options) {
+                position = options.position || position;
+                name = options.name || name;
+            }
+            position = _getPosition(position);
+
+            var cc = new _CustomControl(map, position);
+            cc.name(name);
+
+            customControls[name] = cc;
+
+            return cc;
         }
 
         self.update = function(type, obj) {
@@ -657,7 +735,8 @@
             minZoom = 0,
             visibility = 'visible',
             BGcolor = '#614e6c',
-            click = null;
+            click = null,
+            dragged = false;
 
         if (typeof options !== 'undefined') {
             name = options.name || name;
@@ -680,7 +759,7 @@
                 marker.on('click', function() {
                     if (d3.event.defaultPrevented) return;
                     d3.event.stopPropagation();
-                    click(name);
+                    click(self);
                 });
             }
 
@@ -696,7 +775,7 @@
         }
 
         self.projection = function(p) {
-            if (p === undefined) {
+            if (!p) {
                 return projection;
             }
             projection = p;
@@ -706,8 +785,8 @@
         }
 
         self.coords = function(c) {
-            if (c === undefined) {
-        	   return coords;
+            if (!c) {
+                return coords;
             }
             coords = c;
             self.update()
@@ -715,7 +794,7 @@
         }
 
         self.name = function(n) {
-            if (n === undefined) {
+            if (!n) {
         	   return name;
             }
             name = n;
@@ -723,7 +802,7 @@
         }
 
         self.id = function(id) {
-            if (id === undefined) {
+            if (!id) {
                 return IDtag;
             }
             IDtag = id;
@@ -740,9 +819,20 @@
         }
 
         self.click = function(c) {
-            if(!c) {
-                return
+            if(c === undefined && click) {
+                return click(self);
             }
+            else if (c === null) {
+                marker.on('click', null);
+                return click = null;
+            }
+            click = c;
+            marker.on('click', function() {
+                if (d3.event.defaultPrevented) return;
+                d3.event.stopPropagation();
+                click(self);
+            });
+            return self;
         }
 
         self.update = function(zoom) {
@@ -772,17 +862,22 @@
 
         function _dragstart() {
             d3.event.sourceEvent.stopPropagation();
+
             offsetX = d3.event.sourceEvent.offsetX;
             offsetY = d3.event.sourceEvent.offsetY;
         }
         function _drag() {
+            dragged = true;
             marker
                 .style('left', (d3.event.x-offsetX) + 'px')
                 .style('top', (d3.event.y-offsetY) + 'px');
             screenXY = [(d3.event.x+width-offsetX), (d3.event.y+height-offsetY)];
         }
         function _dragend() {
-            coords =  projection.invert(screenXY);
+            if (dragged) {
+                coords =  projection.invert(screenXY);
+                dragged = false;
+            }
         }
     }
 
@@ -1059,6 +1154,12 @@
             }
             controls.addControl(type, position);
             return self;
+        }
+        self.customControl = function(options) {
+            if (controls === null) {
+                controls = new _Controls(self, map, projection, zoom);
+            }
+            return controls.customControl(options);
         }
 
         self.projection = function() {
