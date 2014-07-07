@@ -11,26 +11,27 @@ window.onload = function(){
 
 		//.addControl('info', 'bottom-left')
 		.addControl('zoom')
-		.addMarker(avl.MapMarker([-73.824, 42.686], {name: 'UAlbany', minZoom: 4}))
+		.addMarker(avl.MapMarker([-73.824, 42.686], {name: 'UAlbany'}))
 		.addControl('marker')
-		.addMarker(avl.MapMarker([-76.47492, 42.691599], {name: 'Locke'}))
+		.addMarker(avl.MapMarker([-76.47492, 42.691599], {name: 'Locke', minZoom: 5}))
 		.addLayer(avl.RasterLayer("http://{s}.tiles.mapbox.com/v3/am3081.map-lkbhqenw/{z}/{x}/{y}.png"));
 
 	// var layer = avl.VectorLayer("http://localhost:8080/{z}/{x}/{y}", {dataType: 'geojson'});
 
 	// map.addLayer(layer);	
 
-	var custom = map.customControl({name: 'Click me!', position: 'bottom-left'});
-	custom.click(_clicked);
+	var custom = map.customControl({name: 'Click me!', position: 'bottom-left', click: _clicked});
 	
-	var marker = avl.MapMarker([-73.682446, 42.735232], {name: 'Troy', drag: true});
-	marker.addTo(map);
-	marker.click(_clicked2);
+	var marker = avl.MapMarker([-73.682446, 42.735232],
+					{name: 'Troy', drag: true, click: _clicked2, BGcolor: "#a50026"})
+			.addTo(map);
+
+	var BGcolors = ["#a50026","#d73027","#f46d43","#fdae61","#fee090","#ffffbf","#e0f3f8","#abd9e9","#74add1","#4575b4","#313695"];
 
 	function _clicked(control) {
 		alert("Thanks for clicking!!!");
 	}
 	function _clicked2(m) {
-		alert("You clicked the " + marker.name() + " marker!!!");
+		marker.BGcolor(BGcolors[Math.floor(Math.random()*BGcolors.length)]);
 	}
 }

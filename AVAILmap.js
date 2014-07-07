@@ -694,15 +694,18 @@
         }
         self.customControl = function(options) {
             var position = 'top-right',
-                name = 'Custom Control ' + customControlsIDs++;
+                name = 'Custom Control ' + customControlsIDs++,
+                click = null;
 
             if (options) {
                 position = options.position || position;
                 name = options.name || name;
+                click = options.click || click;
             }
             position = _getPosition(position);
 
             var cc = new _CustomControl(map, position);
+            cc.click(click);
             cc.name(name);
 
             customControls[name] = cc;
@@ -851,6 +854,7 @@
 
         self.addTo = function(mapObj) {
             mapObj.addMarker(self);
+            return self;
         }
 
         self.remove = function() {
