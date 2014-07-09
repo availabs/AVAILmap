@@ -8,14 +8,14 @@
 }
 
 .kind-highway {
-  stroke-width: 3px;
+  stroke-width: 6px;
   stroke: #a00;
 }
 .kind-major_road {
-  stroke-width: 2px;
+  stroke-width: 4px;
   stroke: #ff6500;
 }
 .kind-minor_road {
-  stroke-width: 1px;
+  stroke-width: 2px;
   stroke: #cc9500;
 }
