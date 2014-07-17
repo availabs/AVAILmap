@@ -294,7 +294,40 @@
     function _RasterLayer(url, options) {
         _TileLayer.call(this, url, options);
 
-        this.drawTile = function(d) {
+        var self = this,
+            DIV = null,
+            zIndex = -5;
+
+        if (options) {
+            zIndex = options.zIndex || zIndex;
+        }
+
+        self.div = function(d) {
+            if (arguments.length == 0) {
+                return DIV;
+            }
+            DIV = d;
+            DIV.style("z-index", zIndex);
+            return self;
+        }
+
+        self.zIndex = function(z) {
+            if (arguments.length == 0) {
+                return zIndex;
+            }
+            if (z <= 0) {
+                z = -5;
+            } else {
+                z = 5;
+            }
+            zIndex = z;
+            if (DIV) {
+                DIV.style("z-index", zIndex);
+            }
+            return self;
+        }
+
+        self.drawTile = function(d) {
 			return _makeTileURL(d, url);
         }
     }
@@ -319,15 +352,15 @@
 
         var pathLayerID = layer.id();
 
-        var regex = /\d{4}\./;  // this is needed to patch a d3 fill problem
+        //var regex = /\d{4}\./;  // this is needed to patch a d3 fill problem
 
         tilePath.projection()
             .translate([k / 2 - d[0] * 256, k / 2 - d[1] * 256])
             .scale(k / 2 / Math.PI);
 
-        var visibility = layer.getVisibility(),
+        var visibility = layer.getVisibility()/*,
 			choros = layer.getChoros(),
-			hover = layer.getHover();
+			hover = layer.getHover()*/;
 
         var paths = SVG.selectAll('.'+pathLayerID)
             .data(json.features)
@@ -360,7 +393,7 @@
 			})*/
             .attr('d', tilePath)
             .style('visibility', visibility);
-
+/*
         if (choros) {
 			paths.each(function(d) {
                 var path = d3.select(this);
@@ -391,6 +424,7 @@
                 });
             });
         }
+*/
     }
 
     function _Control(map, id, position) {
@@ -682,7 +716,7 @@
                 controls.marker = new _MarkerControl(mapObj, map, projection, zoom, position);
             }
         }
-        
+
         function _getPosition(pos) {
             pos = pos || 'top-right';
 
@@ -727,27 +761,42 @@
 			}
         }
     }
-//IDtag, mapObj, projection, name, draggable)
+
+    // map marker constructor
     function _MapMarker(coords, options) {
         var self = this,
+            map,            // D3 selected map to which the marker is appended
+
+            marker,         // map marker DOM element
+            baseHeight,     // base marker height
+            baseWidth,      // base marker width
+            height,         // current marker height
+            width,          // current marker width
+            top,            // marker top
+            left,           // marker left
+
+            projection,     // map projection, used to place marker using coords
+
             screenXY = [],
-            map,
-            marker,
-            height,
-            width,
-            top,
-            left,
-            projection,
             offsetX = 0,
             offsetY = 0,
-            name = null,
+            draggable = false,  // user settable option
+            dragged = false,    // flag used to track dragging
+
+            name = null,    // name to be displayed in a marker control
             IDtag,
-            draggable = false,
-            minZoom = 0,
-            visibility = 'visible',
+
+            minZoom = 0,            // min zoom that marker will be displayed at
+            visibility = 'visible', // used to hide marker at zooms less than minZoom
+
             BGcolor = '#614e6c',
-            click = null,
-            dragged = false;
+
+            click = null;   // optional function to be called when marker is clicked
+
+        // this scale is used to resize the marker at different zooms
+        var scale = d3.scale.linear()
+            .range([.25, 1.0])
+            .clamp(true);
 
         if (typeof options !== 'undefined') {
             name = options.name || name;
@@ -780,8 +829,8 @@
                     .on("drag", _drag)
                     .on("dragend", _dragend));
             }
-            height = parseInt(marker.style('height'));
-            width = parseInt(marker.style('width'))/2;
+            baseHeight = height = parseInt(marker.style('height'));
+            baseWidth = width = parseInt(marker.style('width'));
             return self;
         }
 
@@ -791,7 +840,7 @@
             }
             projection = p;
             top = projection(coords)[1]-height;
-            left = projection(coords)[0]-width;
+            left = projection(coords)[0]-width/2;
             return self;
         }
 
@@ -829,6 +878,14 @@
             return self;
         }
 
+        self.scale = function(s) {
+            if (!arguments.length) {
+                return scale;
+            }
+            scale = s;
+            return self;
+        }
+
         self.click = function(c) {
             if(c === undefined && click) {
                 return click(self);
@@ -847,13 +904,21 @@
         }
 
         self.update = function(zoom) {
+            var scl = scale(zoom);
+
+            height = baseHeight * scl;
+            width = baseWidth * scl;
+
+            marker.style('height', height+'px')
+                .style('width', width+'px');
+
             top = projection(coords)[1]-height;
-            left = projection(coords)[0]-width;
+            left = projection(coords)[0]-width/2;
 
             marker.style('left', left+'px')
                 .style('top', top+'px');
 
-            visibility = (zoom > minZoom ? 'visible' : 'hidden');
+            visibility = (zoom >= minZoom ? 'visible' : 'hidden');
 
             marker.style('visibility', visibility);
 
@@ -883,7 +948,7 @@
             marker
                 .style('left', (d3.event.x-offsetX) + 'px')
                 .style('top', (d3.event.y-offsetY) + 'px');
-            screenXY = [(d3.event.x+width-offsetX), (d3.event.y+height-offsetY)];
+            screenXY = [(d3.event.x+width/2-offsetX), (d3.event.y+height-offsetY)];
         }
         function _dragend() {
             if (dragged) {
@@ -977,6 +1042,8 @@
         }
         maxZoom = Math.min(17, maxZoom);
 
+        var markerScaleDomain = [minZoom, (minZoom+maxZoom)*(2/3)];
+
         startZoom = 1 << (startZoom + zoomAdjust);
         zoomExtent = [1 << (minZoom + zoomAdjust), 1 << (maxZoom + zoomAdjust)];
 
@@ -1004,10 +1071,7 @@
             .attr("class", "map")
             .style("width", width + "px")
             .style("height", height + "px")
-            .call(zoom)
-            .on("dragstart", function() {
-                d3.event.sourceEvent.stopPropagation(); // silence other listeners
-            });
+            .call(zoom);
 
         var layersDiv,
             rasterDiv;
@@ -1017,7 +1081,7 @@
                 .scale(zoom.scale())
                 .translate(zoom.translate())();
 
-            // tiles[0][2] is the current zoom
+            // tiles[0][2] contains the current zoom
             currentZoom = tiles[0][2];
 
             projection
@@ -1163,8 +1227,9 @@
 
                 rasterDiv = map.append("div")
                     .attr('id', 'raster-layer')
-                    .attr("class", "layersDiv")
-                    .style('z-index', -5);
+                    .attr("class", "layersDiv");
+
+                layer.div(rasterDiv);
 
                 if (layers.length == 0) {
                     self.zoomMap();
@@ -1190,6 +1255,7 @@
             }
             marker.map(map);
             marker.projection(projection);
+            marker.scale().domain(markerScaleDomain);
             marker.update(currentZoom);
 
             if (controls !== null) {
