@@ -110,4 +110,5 @@ body {
   width: 20px;
   background-color: #614e6c;
   position: absolute;
+  z-index: 10;
 }
